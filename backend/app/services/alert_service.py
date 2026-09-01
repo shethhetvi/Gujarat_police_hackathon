@@ -21,7 +21,8 @@ class AlertService:
             plate_number=watchlist_entry.plate_number,
             severity=watchlist_entry.priority or "HIGH",
             location_name=camera.location_name,
-            snapshot_url=detection.snapshot_url
+            snapshot_url=detection.snapshot_url,
+            is_simulated=detection.is_simulated
         )
         db.add(alert)
         db.commit()
@@ -32,6 +33,9 @@ class AlertService:
             "type": "NEW_ALERT",
             "alert": {
                 "id": alert.id,
+                "detection_event_id": alert.detection_event_id,
+                "camera_id": alert.camera_id,
+                "watchlist_entry_id": alert.watchlist_entry_id,
                 "plate_number": alert.plate_number,
                 "category": watchlist_entry.category,
                 "severity": alert.severity,
@@ -40,6 +44,9 @@ class AlertService:
                 "latitude": camera.latitude,
                 "longitude": camera.longitude,
                 "snapshot_url": alert.snapshot_url,
+                "acknowledged": alert.acknowledged,
+                "acknowledged_by": alert.acknowledged_by,
+                "is_simulated": alert.is_simulated,
                 "timestamp": str(alert.timestamp)
             }
         }
