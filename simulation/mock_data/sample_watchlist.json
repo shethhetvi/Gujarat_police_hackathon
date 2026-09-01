@@ -1,0 +1,38 @@
+[
+  {
+    "plate_number": "GJ01AB1234",
+    "category": "stolen",
+    "description": "Stolen white Hyundai Creta reported from Navrangpura PS",
+    "vehicle_make_model": "Hyundai Creta",
+    "color": "White",
+    "priority": "CRITICAL",
+    "is_active": true
+  },
+  {
+    "plate_number": "GJ05CD5678",
+    "category": "wanted",
+    "description": "Suspect vehicle involved in commercial burglary case",
+    "vehicle_make_model": "Maruti Swift",
+    "color": "Silver",
+    "priority": "HIGH",
+    "is_active": true
+  },
+  {
+    "plate_number": "GJ06EF9012",
+    "category": "blacklisted",
+    "description": "Unauthorized commercial transport without permits",
+    "vehicle_make_model": "Tata 407",
+    "color": "Yellow",
+    "priority": "MEDIUM",
+    "is_active": true
+  },
+  {
+    "plate_number": "GJ03GH3456",
+    "category": "missing",
+    "description": "Missing person vehicle tracked from Rajkot city",
+    "vehicle_make_model": "Honda City",
+    "color": "Black",
+    "priority": "HIGH",
+    "is_active": true
+  }
+]

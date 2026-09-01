@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Ahmedabad SG Highway Junction",
+    "vendor": "Hikvision",
+    "protocol": "RTSP",
+    "stream_url": "rtsp://camera1.local/live",
+    "location_name": "SG Highway, Ahmedabad",
+    "latitude": 23.0338,
+    "longitude": 72.5085,
+    "is_active": true
+  },
+  {
+    "name": "Ahmedabad SP Ring Road Toll",
+    "vendor": "Dahua",
+    "protocol": "RTSP",
+    "stream_url": "rtsp://camera2.local/live",
+    "location_name": "SP Ring Road, Ahmedabad",
+    "latitude": 23.0012,
+    "longitude": 72.5851,
+    "is_active": true
+  },
+  {
+    "name": "Vadodara Express Highway Entry",
+    "vendor": "CP PLUS",
+    "protocol": "RTSP",
+    "stream_url": "rtsp://camera3.local/live",
+    "location_name": "NH-48 Entry, Vadodara",
+    "latitude": 22.3072,
+    "longitude": 73.1812,
+    "is_active": true
+  },
+  {
+    "name": "Surat Varachha Flyover",
+    "vendor": "Axis",
+    "protocol": "ONVIF",
+    "stream_url": "rtsp://camera4.local/live",
+    "location_name": "Varachha, Surat",
+    "latitude": 21.1702,
+    "longitude": 72.8311,
+    "is_active": true
+  },
+  {
+    "name": "Rajkot Kalawad Road Circle",
+    "vendor": "Generic",
+    "protocol": "RTSP",
+    "stream_url": "rtsp://camera5.local/live",
+    "location_name": "Kalawad Road, Rajkot",
+    "latitude": 22.2858,
+    "longitude": 70.7745,
+    "is_active": true
+  }
+]
