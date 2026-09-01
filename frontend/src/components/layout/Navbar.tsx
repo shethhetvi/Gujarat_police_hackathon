@@ -3,9 +3,18 @@ import React from 'react';
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onSimulateSighting?: () => void;
+  onSimulateRoute?: () => void;
+  isSimulating?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  setActiveTab,
+  onSimulateSighting,
+  onSimulateRoute,
+  isSimulating = false
+}) => {
   const tabs = [
     { id: 'dashboard', label: 'Command Center' },
     { id: 'cameras', label: 'Live Feeds' },
@@ -25,7 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       borderBottom: '1px solid var(--border-color)',
       position: 'sticky',
       top: 0,
-      zIndex: 1000
+      zIndex: 1000,
+      flexWrap: 'wrap',
+      gap: '1rem'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <div style={{
@@ -50,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
         </span>
       </div>
 
-      <nav style={{ display: 'flex', gap: '0.5rem' }}>
+      <nav style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -70,6 +81,52 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             {tab.label}
           </button>
         ))}
+
+        {/* Live Hackathon Demo Triggers */}
+        {onSimulateSighting && (
+          <div style={{ display: 'flex', gap: '0.4rem', marginLeft: '0.75rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '0.75rem' }}>
+            <button
+              onClick={onSimulateSighting}
+              disabled={isSimulating}
+              title="Trigger live ANPR detection & WebSocket alert"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.18)',
+                color: '#f87171',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              ⚡ {isSimulating ? 'Triggering...' : 'Simulate Alert'}
+            </button>
+            <button
+              onClick={onSimulateRoute}
+              disabled={isSimulating}
+              title="Simulate 4-checkpoint highway trajectory"
+              style={{
+                backgroundColor: 'rgba(6, 182, 212, 0.18)',
+                color: '#22d3ee',
+                border: '1px solid rgba(6, 182, 212, 0.4)',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              🗺️ Simulate Route
+            </button>
+          </div>
+        )}
       </nav>
     </header>
   );

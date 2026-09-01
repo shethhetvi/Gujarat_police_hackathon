@@ -49,3 +49,14 @@ export const getVehicleRoute = async (plateNumber: string): Promise<any> => {
   const res = await api.get(`/analytics/route/${encodeURIComponent(plateNumber)}`);
   return res.data;
 };
+
+export const triggerSimulatedSighting = async (plateNumber: string = "GJ01AB1234", cameraId?: number): Promise<any> => {
+  const res = await api.post(`/analytics/simulate-sighting?plate_number=${encodeURIComponent(plateNumber)}${cameraId ? `&camera_id=${cameraId}` : ''}`);
+  return res.data;
+};
+
+export const triggerSimulatedRoute = async (plateNumber: string = "GJ01AB1234"): Promise<any> => {
+  const res = await api.post(`/analytics/simulate-route?plate_number=${encodeURIComponent(plateNumber)}`);
+  return res.data;
+};
+

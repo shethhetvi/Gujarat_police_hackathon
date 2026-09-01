@@ -21,6 +21,7 @@ class ANPROCREngine:
 
     def _init_ocr(self):
         try:
+            # pyrefly: ignore [missing-import]
             import easyocr
             self.reader = easyocr.Reader(self.languages, gpu=False)
             self.is_real_ocr = True
