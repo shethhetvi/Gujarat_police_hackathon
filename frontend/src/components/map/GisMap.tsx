@@ -99,37 +99,140 @@ export const GisMap: React.FC<GisMapProps> = ({ cameras, alerts, selectedPlate, 
 
       {/* Visual GIS Canvas & Gujarat Nodes Simulation */}
       <div style={{
-        minHeight: '480px',
+        minHeight: '520px',
         backgroundColor: '#070c18',
         position: 'relative',
-        padding: '2rem',
+        padding: '1.5rem',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 80%)'
       }}>
-        {/* Gujarat Geo Grid Visualizer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-            SURVEILLANCE GRID // GUJARAT SECTOR 01-08 // LEAFLET OSM LAYER
-          </span>
+        {/* Gujarat Geo Grid Visualizer Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#10b981',
+              boxShadow: '0 0 8px #10b981'
+            }} />
+            <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+              GUJARAT STATE CCTV GIS RADAR // SECTOR 01-08 // LAT 20.1-24.7°N, LON 68.1-74.4°E
+            </span>
+          </div>
           <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-green)' }}>
-              ● Camera Active ({cameras.length})
+              ● Online Feeds ({cameras.length})
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--alert-red)' }}>
-              ▲ Watchlist Match Alert ({alerts.length})
+              ▲ Intercept Alerts ({alerts.length})
             </span>
           </div>
         </div>
 
-        {/* Nodes Representation on Gujarat Map (Ahmedabad -> Vadodara -> Surat -> Rajkot) */}
+        {/* Dynamic Trajectory SVG Map Canvas */}
+        <div style={{
+          position: 'relative',
+          height: '240px',
+          backgroundColor: 'rgba(11, 19, 36, 0.85)',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '1rem'
+        }}>
+          {/* Subtle Grid Lines */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'linear-gradient(rgba(30, 41, 59, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 41, 59, 0.3) 1px, transparent 1px)',
+            backgroundSize: '30px 30px',
+            opacity: 0.7
+          }} />
+
+          {/* SVG Map Canvas with Animated Polylines */}
+          <svg style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
+            <defs>
+              <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
+              </linearGradient>
+            </defs>
+
+            {/* Connecting Polylines for Checkpoints */}
+            {routeData?.checkpoints?.length > 1 && (
+              <polyline
+                points={routeData.checkpoints.map((cp: any, i: number) => {
+                  const stepX = 100 + (i * ((800 - 200) / (routeData.checkpoints.length - 1 || 1)));
+                  const stepY = 120 + ((i % 2 === 0 ? -40 : 40));
+                  return `${stepX},${stepY}`;
+                }).join(' ')}
+                fill="none"
+                stroke="url(#routeGradient)"
+                strokeWidth="4"
+                strokeDasharray="6 4"
+                strokeLinecap="round"
+              />
+            )}
+
+            {/* Render Nodes on Map */}
+            {cameras.map((cam, idx) => {
+              const isCheckpoint = routeData?.checkpoints?.some((cp: any) => cp.camera_id === cam.id);
+              const hasAlert = alerts.some((a) => a.camera_id === cam.id);
+              const nodeX = 100 + (idx * 160);
+              const nodeY = 120 + (idx % 2 === 0 ? -40 : 40);
+
+              return (
+                <g key={cam.id} transform={`translate(${nodeX}, ${nodeY})`}>
+                  {/* Pulse circle if checkpoint */}
+                  {isCheckpoint && (
+                    <circle r="20" fill="rgba(6, 182, 212, 0.25)">
+                      <animate attributeName="r" values="12;24;12" dur="2s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  <circle
+                    r="9"
+                    fill={isCheckpoint ? '#06b6d4' : hasAlert ? '#ef4444' : '#3b82f6'}
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                  <text
+                    y="-15"
+                    textAnchor="middle"
+                    fill={isCheckpoint ? '#67e8f9' : '#cbd5e1'}
+                    fontSize="11"
+                    fontFamily="var(--font-mono)"
+                    fontWeight="700"
+                  >
+                    {cam.name.split(' ')[0]}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+
+          {(!routeData || routeData.checkpoints_count === 0) && (
+            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>🛰️</span>
+              <p style={{ marginTop: '0.3rem' }}>Search any plate above or click "Simulate Route" to plot live movement trajectory</p>
+            </div>
+          )}
+        </div>
+
+        {/* Nodes Representation on Gujarat Map */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1.5rem',
-          margin: '1rem 0'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1rem',
+          margin: '0.5rem 0'
         }}>
-          {cameras.map((cam, idx) => {
+          {cameras.map((cam) => {
             const hasAlert = alerts.some((a) => a.camera_id === cam.id);
             const isCheckpoint = routeData?.checkpoints?.some((cp: any) => cp.camera_id === cam.id);
 
@@ -191,7 +294,7 @@ export const GisMap: React.FC<GisMapProps> = ({ cameras, alerts, selectedPlate, 
         {/* Route History Timeline if traced */}
         {routeData && routeData.checkpoints_count > 0 && (
           <div style={{
-            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
             border: '1px solid rgba(6, 182, 212, 0.4)',
             borderRadius: '8px',
             padding: '1rem',

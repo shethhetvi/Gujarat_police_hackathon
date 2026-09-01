@@ -16,7 +16,9 @@ import {
   getAlerts,
   acknowledgeAlert,
   getDetections,
-  getAnalyticsSummary
+  getAnalyticsSummary,
+  triggerSimulatedSighting,
+  triggerSimulatedRoute
 } from '../services/api';
 import { wsService } from '../services/websocket';
 import { Camera, WatchlistEntry, Alert, DetectionEvent, AnalyticsSummary, WatchlistCreate } from '../types';
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false);
   const [selectedTrackingPlate, setSelectedTrackingPlate] = useState<string>('GJ01AB1234');
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // Search filter states
   const [searchPlate, setSearchPlate] = useState('');
@@ -88,6 +91,48 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
+  const handleSimulateSighting = async () => {
+    setIsSimulating(true);
+    try {
+      await triggerSimulatedSighting(selectedTrackingPlate || 'GJ01AB1234');
+      await loadData();
+    } catch (err) {
+      console.error('Error simulating sighting:', err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  const handleSimulateRoute = async () => {
+    setIsSimulating(true);
+    try {
+      await triggerSimulatedRoute(selectedTrackingPlate || 'GJ01AB1234');
+      await loadData();
+      setActiveTab('map');
+    } catch (err) {
+      console.error('Error simulating route:', err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  const handleExportDossier = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+      report: "Gujarat Police SentinelGrid ANPR Audit & Incident Dossier",
+      generated_at: new Date().toISOString(),
+      summary,
+      active_alerts: alerts,
+      recent_detections: detections,
+      watchlist_targets: watchlist
+    }, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `SentinelGrid_Incident_Dossier_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
   const handleAcknowledge = async (alertId: number) => {
     try {
       await acknowledgeAlert(alertId, 'Control Room Officer');
@@ -114,7 +159,13 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onSimulateSighting={handleSimulateSighting}
+        onSimulateRoute={handleSimulateRoute}
+        isSimulating={isSimulating}
+      />
 
       <main style={{ flex: 1, padding: '1.5rem 2rem', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
         {/* KPI Metrics Row */}
@@ -214,20 +265,37 @@ export default function Dashboard() {
                   Query and verify every vehicle sighting across Gujarat CCTV junctions.
                 </p>
               </div>
-              <input
-                type="text"
-                placeholder="Filter by Plate Number..."
-                value={searchPlate}
-                onChange={(e) => setSearchPlate(e.target.value)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  fontFamily: 'var(--font-mono)'
-                }}
-              />
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Filter by Plate Number..."
+                  value={searchPlate}
+                  onChange={(e) => setSearchPlate(e.target.value)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontFamily: 'var(--font-mono)'
+                  }}
+                />
+                <button
+                  onClick={handleExportDossier}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    border: '1px solid rgba(16, 185, 129, 0.5)',
+                    color: '#10b981',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📄 Export Dossier (JSON)
+                </button>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
