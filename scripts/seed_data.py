@@ -1,13 +1,19 @@
 """
 Database initialization and test seed script.
 """
+import sys
+import os
+import json
+from pathlib import Path
+
+# Add backend to python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
+
 from app.core.database import SessionLocal, engine, Base
 from app.models.camera import Camera
 from app.models.watchlist import WatchlistEntry
 from app.models.detection import DetectionEvent
 from app.models.alert import Alert
-import json
-from pathlib import Path
 
 def init_db():
     print("Creating database schema tables...")
