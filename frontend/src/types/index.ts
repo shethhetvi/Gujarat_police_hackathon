@@ -23,6 +23,16 @@ export interface WatchlistEntry {
   created_at?: string;
 }
 
+export interface WatchlistCreate {
+  plate_number: string;
+  category: 'stolen' | 'wanted' | 'missing' | 'blacklisted';
+  priority?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  vehicle_make_model?: string;
+  description?: string;
+  color?: string;
+  is_active?: boolean;
+}
+
 export interface DetectionEvent {
   id: number;
   camera_id: number;
@@ -33,19 +43,25 @@ export interface DetectionEvent {
   snapshot_url?: string;
   matched: boolean;
   watchlist_entry_id?: number;
+  is_simulated?: boolean;
 }
 
 export interface Alert {
   id: number;
-  detection_event_id: number;
-  camera_id: number;
-  watchlist_entry_id: number;
+  detection_event_id?: number;
+  camera_id?: number;
+  camera_name?: string;
+  watchlist_entry_id?: number;
   plate_number: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  category?: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   location_name?: string;
+  latitude?: number;
+  longitude?: number;
   snapshot_url?: string;
-  acknowledged: boolean;
+  acknowledged?: boolean;
   acknowledged_by?: string;
+  is_simulated?: boolean;
   timestamp: string;
 }
 

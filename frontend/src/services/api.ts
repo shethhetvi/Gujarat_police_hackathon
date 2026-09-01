@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { Camera, WatchlistEntry, DetectionEvent, Alert, AnalyticsSummary } from '../types';
+import { Camera, WatchlistEntry, WatchlistCreate, DetectionEvent, Alert, AnalyticsSummary } from '../types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: `${API_BASE}/api/v1`,
@@ -20,7 +20,7 @@ export const getWatchlist = async (): Promise<WatchlistEntry[]> => {
   return res.data;
 };
 
-export const addWatchlistEntry = async (entry: Partial<WatchlistEntry>): Promise<WatchlistEntry> => {
+export const addWatchlistEntry = async (entry: WatchlistCreate): Promise<WatchlistEntry> => {
   const res = await api.post('/watchlist/', entry);
   return res.data;
 };
@@ -42,5 +42,10 @@ export const getDetections = async (params?: { plate_number?: string; camera_id?
 
 export const getAnalyticsSummary = async (): Promise<AnalyticsSummary> => {
   const res = await api.get('/analytics/summary');
+  return res.data;
+};
+
+export const getVehicleRoute = async (plateNumber: string): Promise<any> => {
+  const res = await api.get(`/analytics/route/${encodeURIComponent(plateNumber)}`);
   return res.data;
 };
