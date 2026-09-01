@@ -14,3 +14,4 @@ class DetectionEvent(Base):
     snapshot_url = Column(String, nullable=True)
     matched = Column(Boolean, default=False)
     watchlist_entry_id = Column(Integer, ForeignKey("watchlist_entries.id"), nullable=True)
+    is_simulated = Column(Boolean, default=False)  # Transparent label for simulated fallback detections

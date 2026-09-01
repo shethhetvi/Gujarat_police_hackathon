@@ -10,6 +10,7 @@ class DetectionBase(BaseModel):
     snapshot_url: Optional[str] = None
     matched: Optional[bool] = False
     watchlist_entry_id: Optional[int] = None
+    is_simulated: Optional[bool] = False
 
 class DetectionCreate(DetectionBase):
     pass

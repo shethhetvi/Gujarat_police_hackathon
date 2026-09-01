@@ -12,6 +12,7 @@ class AlertBase(BaseModel):
     snapshot_url: Optional[str] = None
     acknowledged: Optional[bool] = False
     acknowledged_by: Optional[str] = None
+    is_simulated: Optional[bool] = False
 
 class AlertCreate(AlertBase):
     pass

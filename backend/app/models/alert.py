@@ -15,4 +15,5 @@ class Alert(Base):
     snapshot_url = Column(String, nullable=True)
     acknowledged = Column(Boolean, default=False)
     acknowledged_by = Column(String, nullable=True)
+    is_simulated = Column(Boolean, default=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
