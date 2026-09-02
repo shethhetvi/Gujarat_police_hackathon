@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Camera, CameraCreate, WatchlistEntry, WatchlistCreate, DetectionEvent, Alert, AnalyticsSummary } from '../types';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
