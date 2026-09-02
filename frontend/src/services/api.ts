@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { Camera, WatchlistEntry, WatchlistCreate, DetectionEvent, Alert, AnalyticsSummary } from '../types';
+import { Camera, CameraCreate, WatchlistEntry, WatchlistCreate, DetectionEvent, Alert, AnalyticsSummary } from '../types';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -15,6 +14,11 @@ export const getCameras = async (): Promise<Camera[]> => {
   return res.data;
 };
 
+export const createCamera = async (camera: CameraCreate): Promise<Camera> => {
+  const res = await api.post('/cameras/', camera);
+  return res.data;
+};
+
 export const getWatchlist = async (): Promise<WatchlistEntry[]> => {
   const res = await api.get('/watchlist/');
   return res.data;
@@ -22,6 +26,11 @@ export const getWatchlist = async (): Promise<WatchlistEntry[]> => {
 
 export const addWatchlistEntry = async (entry: WatchlistCreate): Promise<WatchlistEntry> => {
   const res = await api.post('/watchlist/', entry);
+  return res.data;
+};
+
+export const deleteWatchlistEntry = async (entryId: number): Promise<any> => {
+  const res = await api.delete(`/watchlist/${entryId}`);
   return res.data;
 };
 

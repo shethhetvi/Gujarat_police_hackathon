@@ -11,6 +11,17 @@ export interface Camera {
   created_at?: string;
 }
 
+export interface CameraCreate {
+  name: string;
+  vendor?: string;
+  protocol?: string;
+  stream_url: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  is_active?: boolean;
+}
+
 export interface WatchlistEntry {
   id: number;
   plate_number: string;

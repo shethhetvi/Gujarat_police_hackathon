@@ -6,13 +6,16 @@ import { StatCard } from '../components/common/StatCard';
 import { AlertFeed } from '../components/alerts/AlertFeed';
 import { AlertModal } from '../components/alerts/AlertModal';
 import { CameraGrid } from '../components/cameras/CameraGrid';
+import { CameraModal } from '../components/cameras/CameraModal';
 import { GisMap } from '../components/map/GisMap';
 import { WatchlistTable } from '../components/watchlist/WatchlistTable';
 import { WatchlistModal } from '../components/watchlist/WatchlistModal';
 import {
   getCameras,
+  createCamera,
   getWatchlist,
   addWatchlistEntry,
+  deleteWatchlistEntry,
   getAlerts,
   acknowledgeAlert,
   getDetections,
@@ -21,7 +24,7 @@ import {
   triggerSimulatedRoute
 } from '../services/api';
 import { wsService } from '../services/websocket';
-import { Camera, WatchlistEntry, Alert, DetectionEvent, AnalyticsSummary, WatchlistCreate } from '../types';
+import { Camera, WatchlistEntry, Alert, DetectionEvent, AnalyticsSummary, WatchlistCreate, CameraCreate } from '../types';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -39,11 +42,14 @@ export default function Dashboard() {
 
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [selectedTrackingPlate, setSelectedTrackingPlate] = useState<string>('GJ01AB1234');
   const [isSimulating, setIsSimulating] = useState(false);
 
   // Search filter states
   const [searchPlate, setSearchPlate] = useState('');
+  const [filterCamera, setFilterCamera] = useState<string>('ALL');
+  const [filterMatch, setFilterMatch] = useState<string>('ALL');
 
   // Initial Data Load
   const loadData = async () => {
@@ -153,9 +159,34 @@ export default function Dashboard() {
     setSummary((prev) => ({ ...prev, watchlist_count: updated.length }));
   };
 
-  const filteredDetections = detections.filter((d) =>
-    searchPlate ? d.plate_number?.toLowerCase().includes(searchPlate.toLowerCase()) : true
-  );
+  const handleDeleteWatchlist = async (id: number) => {
+    try {
+      await deleteWatchlistEntry(id);
+      const updated = await getWatchlist();
+      setWatchlist(updated);
+      setSummary((prev) => ({ ...prev, watchlist_count: updated.length }));
+    } catch (err) {
+      console.error('Error deleting watchlist entry:', err);
+    }
+  };
+
+  const handleAddCamera = async (newCam: CameraCreate) => {
+    await createCamera(newCam);
+    const updated = await getCameras();
+    setCameras(updated);
+    setSummary((prev) => ({
+      ...prev,
+      total_cameras: updated.length,
+      active_cameras: updated.filter((c) => c.is_active).length
+    }));
+  };
+
+  const filteredDetections = detections.filter((d) => {
+    const matchesPlate = searchPlate ? d.plate_number?.toLowerCase().includes(searchPlate.toLowerCase()) : true;
+    const matchesCam = filterCamera === 'ALL' ? true : d.camera_id === parseInt(filterCamera, 10);
+    const matchesStatus = filterMatch === 'ALL' ? true : filterMatch === 'MATCHED' ? d.matched : !d.matched;
+    return matchesPlate && matchesCam && matchesStatus;
+  });
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -213,6 +244,7 @@ export default function Dashboard() {
             <AlertFeed
               alerts={alerts}
               onAcknowledge={handleAcknowledge}
+              onSelectAlert={setSelectedAlert}
             />
           </div>
         )}
@@ -228,7 +260,10 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <CameraGrid cameras={cameras} />
+            <CameraGrid
+              cameras={cameras}
+              onAddCamera={() => setIsCameraModalOpen(true)}
+            />
           </div>
         )}
 
@@ -247,6 +282,7 @@ export default function Dashboard() {
           <WatchlistTable
             entries={watchlist}
             onAddClick={() => setIsWatchlistModalOpen(true)}
+            onDelete={handleDeleteWatchlist}
           />
         )}
 
@@ -262,35 +298,75 @@ export default function Dashboard() {
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>🔍 ANPR Detection Audit History</h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Query and verify every vehicle sighting across Gujarat CCTV junctions.
+                  Query and verify every vehicle sighting across Gujarat CCTV junctions ({filteredDetections.length} matches).
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <input
                   type="text"
-                  placeholder="Filter by Plate Number..."
+                  placeholder="Filter Plate..."
                   value={searchPlate}
                   onChange={(e) => setSearchPlate(e.target.value)}
                   style={{
-                    padding: '0.5rem 1rem',
+                    padding: '0.45rem 0.85rem',
                     backgroundColor: 'var(--bg-secondary)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
                     color: '#fff',
-                    fontFamily: 'var(--font-mono)'
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.85rem'
                   }}
                 />
+
+                <select
+                  value={filterCamera}
+                  onChange={(e) => setFilterCamera(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <option value="ALL">All Cameras ({cameras.length})</option>
+                  {cameras.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      Camera #{c.id} - {c.location_name.split(',')[0]}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterMatch}
+                  onChange={(e) => setFilterMatch(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="MATCHED">🚨 Watchlist Hits Only</option>
+                  <option value="PASSED">Passed / Cleared</option>
+                </select>
+
                 <button
                   onClick={handleExportDossier}
                   style={{
-                    padding: '0.5rem 1rem',
+                    padding: '0.45rem 0.85rem',
                     backgroundColor: 'rgba(16, 185, 129, 0.2)',
                     border: '1px solid rgba(16, 185, 129, 0.5)',
                     color: '#10b981',
                     borderRadius: '6px',
                     fontWeight: 600,
                     fontSize: '0.85rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   📄 Export Dossier (JSON)
@@ -312,39 +388,47 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDetections.map((det) => (
-                    <tr key={det.id} style={{ borderBottom: '1px solid rgba(36, 52, 77, 0.4)' }}>
-                      <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>#{det.id}</td>
-                      <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#38bdf8' }}>
-                        {det.plate_number || 'UNKNOWN'}
-                      </td>
-                      <td style={{ padding: '0.75rem' }}>Camera #{det.camera_id}</td>
-                      <td style={{ padding: '0.75rem' }}>{(det.confidence * 100).toFixed(1)}%</td>
-                      <td style={{ padding: '0.75rem' }}>
-                        <span style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          backgroundColor: det.matched ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.1)',
-                          color: det.matched ? 'var(--alert-red)' : 'var(--status-green)'
-                        }}>
-                          {det.matched ? '🚨 WATCHLIST MATCH' : 'PASSED'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem' }}>
-                        <span style={{
-                          fontSize: '0.7rem',
-                          color: det.is_simulated ? '#f59e0b' : '#38bdf8'
-                        }}>
-                          {det.is_simulated ? 'SIMULATED' : 'LIVE AI'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>
-                        {new Date(det.timestamp).toLocaleString()}
+                  {filteredDetections.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No detections match the selected filter criteria.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredDetections.map((det) => (
+                      <tr key={det.id} style={{ borderBottom: '1px solid rgba(36, 52, 77, 0.4)' }}>
+                        <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>#{det.id}</td>
+                        <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#38bdf8' }}>
+                          {det.plate_number || 'UNKNOWN'}
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>Camera #{det.camera_id}</td>
+                        <td style={{ padding: '0.75rem' }}>{(det.confidence * 100).toFixed(1)}%</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <span style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            backgroundColor: det.matched ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.1)',
+                            color: det.matched ? 'var(--alert-red)' : 'var(--status-green)'
+                          }}>
+                            {det.matched ? '🚨 WATCHLIST MATCH' : 'PASSED'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            color: det.is_simulated ? '#f59e0b' : '#38bdf8'
+                          }}>
+                            {det.is_simulated ? 'SIMULATED' : 'LIVE AI'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>
+                          {new Date(det.timestamp).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -357,6 +441,12 @@ export default function Dashboard() {
         isOpen={isWatchlistModalOpen}
         onClose={() => setIsWatchlistModalOpen(false)}
         onSubmit={handleAddWatchlist}
+      />
+
+      <CameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onSubmit={handleAddCamera}
       />
 
       <AlertModal
