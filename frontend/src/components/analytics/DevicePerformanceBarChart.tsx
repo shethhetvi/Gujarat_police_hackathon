@@ -25,12 +25,9 @@ export default function DevicePerformanceBarChart() {
   ];
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
+    <div className="card-flash-purple" style={{
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       gap: '1rem'

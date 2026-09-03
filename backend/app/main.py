@@ -20,7 +20,11 @@ def seed_initial_data():
     try:
         if db.query(Camera).count() == 0:
             default_cams = [
-                Camera(name="Ahmedabad S.G. Highway Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/ahmedabad_sg", location_name="SG Highway, Ahmedabad", latitude=23.0338, longitude=72.5850, is_active=True),
+                Camera(name="Chimanbhai Bridge Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/chimanbhai", location_name="Subhash Bridge - RTO, Ahmedabad", latitude=23.0645, longitude=72.5780, is_active=True),
+                Camera(name="Janpath Hotel Circle", vendor="CP Plus", protocol="RTSP", stream_url="rtsp://cctv/janpath", location_name="Ashram Road Corridor, Ahmedabad", latitude=23.0531, longitude=72.5694, is_active=True),
+                Camera(name="O.N.G.C. Chandkheda Circle", vendor="Dahua", protocol="RTSP", stream_url="rtsp://cctv/ongc", location_name="Gandhinagar-Ahmedabad Highway", latitude=23.1025, longitude=72.5935, is_active=True),
+                Camera(name="Paldi Crossroad Circle", vendor="Honeywell", protocol="RTSP", stream_url="rtsp://cctv/paldi", location_name="Paldi, Central Ahmedabad", latitude=23.0135, longitude=72.5620, is_active=True),
+                Camera(name="Ahmedabad S.G. Highway Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/ahmedabad_sg", location_name="SG Highway, Ahmedabad", latitude=23.0338, longitude=72.5085, is_active=True),
                 Camera(name="Ahmedabad Vastrapur Lake Circle", vendor="CP Plus", protocol="RTSP", stream_url="rtsp://cctv/vastrapur", location_name="Vastrapur, Ahmedabad", latitude=23.0350, longitude=72.5293, is_active=True),
                 Camera(name="Surat Dumas Road Junction", vendor="Dahua", protocol="ONVIF", stream_url="rtsp://cctv/surat_dumas", location_name="Dumas Road, Surat", latitude=21.1702, longitude=72.8311, is_active=True),
                 Camera(name="Vadodara Vadsar Circle", vendor="Honeywell", protocol="RTSP", stream_url="rtsp://cctv/vadsar", location_name="Vadsar, Vadodara", latitude=22.2950, longitude=73.1740, is_active=True),

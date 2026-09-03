@@ -89,6 +89,29 @@ export const triggerTrafficShootFrame = async (cameraId?: number, vehicleCount: 
   const url = `/analytics/traffic-shoot-frame?${cameraId ? `camera_id=${cameraId}&` : ''}vehicle_count=${vehicleCount}`;
   const res = await api.post(url);
   return res.data;
+
+export const getPredictiveIntercept = async (plateNumber: string): Promise<any> => {
+  const res = await api.get(`/analytics/route/${encodeURIComponent(plateNumber)}/predict-intercept`);
+  return res.data;
+};
+
+export const getEvidenceDossier = async (plateNumber: string): Promise<any> => {
+  const res = await api.get(`/analytics/route/${encodeURIComponent(plateNumber)}/dossier`);
+  return res.data;
+};
+
+export const dispatchPcrUnit = async (
+  alertId: number,
+  unitName: string,
+  officerInCharge?: string,
+  tacticalInstructions?: string
+): Promise<any> => {
+  const res = await api.post(`/alerts/${alertId}/dispatch`, {
+    unit_name: unitName,
+    officer_in_charge: officerInCharge,
+    tactical_instructions: tacticalInstructions
+  });
+  return res.data;
 };
 
 // ─── Health Check ─────────────────────────────────────────────────────────
@@ -100,3 +123,4 @@ export const checkHealth = async (): Promise<boolean> => {
     return false;
   }
 };
+

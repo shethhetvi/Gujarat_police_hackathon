@@ -62,7 +62,10 @@ export interface DetectionEvent {
   watchlist_entry_id?: number;
   is_simulated?: boolean;
   vehicle_type?: string;
+  vehicle_color?: string;
   speed_kmh?: number;
+  pts_timestamp?: number;
+  sha256_hash?: string;
 }
 
 export interface Alert {
@@ -73,6 +76,7 @@ export interface Alert {
   watchlist_entry_id?: number;
   plate_number: string;
   category?: string;
+  classification_tag?: 'STOLEN_VEHICLE' | 'WANTED_SUSPECT_FIR' | 'SUSPICIOUS_RECCE' | 'TRAFFIC_VIOLATOR' | string;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   location_name?: string;
   latitude?: number;
@@ -82,6 +86,9 @@ export interface Alert {
   acknowledged_by?: string;
   is_simulated?: boolean;
   timestamp: string;
+  speed_kmh?: number;
+  dispatched_unit?: string;
+  dispatch_status?: 'PENDING' | 'DISPATCHED' | 'INTERCEPTED' | string;
 }
 
 export interface AnalyticsSummary {
@@ -114,14 +121,93 @@ export interface RouteCheckpoint {
   snapshot_url?: string;
   matched?: boolean;
   is_simulated?: boolean;
+  speed_kmh?: number;
+  pts_timestamp?: number;
+  vehicle_color?: string;
+  vehicle_type?: string;
+  sha256_hash?: string;
+  distance_from_prev_km?: number;
+  elapsed_mins_from_prev?: number;
+  corridor_velocity_kmh?: number;
+  speed_category?: 'NORMAL' | 'MODERATE' | 'OVERSPEEDING';
+  is_cloned_anomaly?: boolean;
 }
 
 export interface VehicleRouteResponse {
   plate_number: string;
   category?: string;
   priority?: string;
+  vehicle_make_model?: string;
   checkpoints_count: number;
+  total_distance_km?: number;
+  average_velocity_kmh?: number;
+  cloned_plate_anomaly?: boolean;
   checkpoints: RouteCheckpoint[];
+}
+
+export interface PredictedJunction {
+  rank: number;
+  junction_id: string;
+  junction_name: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+  estimated_speed_kmh: number;
+  eta_minutes: number;
+  confidence_score: number;
+  tactical_advisory: string;
+}
+
+export interface PatrolUnit {
+  id: string;
+  name: string;
+  callsign: string;
+  officer: string;
+  type: 'VAN' | 'BIKE' | 'CHECKPOST' | string;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+  eta_minutes: number;
+  status: 'AVAILABLE' | 'PATROLLING' | 'STANDBY' | string;
+}
+
+export interface PredictiveInterceptResponse {
+  status: string;
+  plate_number: string;
+  current_position: {
+    latitude: number;
+    longitude: number;
+    last_seen_camera: string;
+    current_speed_kmh: number;
+  };
+  predicted_intercept_junctions: PredictedJunction[];
+  nearest_pcr_units: PatrolUnit[];
+  tactical_status: string;
+}
+
+export interface Section65BDossier {
+  dossier_type: string;
+  statutory_act: string;
+  case_reference: string;
+  plate_number: string;
+  master_sha256_hash: string;
+  generated_at: string;
+  investigating_authority: string;
+  vehicle_profile: {
+    plate_number: string;
+    category: string;
+    priority: string;
+    make_model: string;
+    description: string;
+  };
+  chronological_route: RouteCheckpoint[];
+  corridor_analytics: {
+    total_distance_km: number;
+    average_velocity_kmh: number;
+    cloned_plate_anomaly: boolean;
+  };
+  alerts_count: number;
 }
 
 export interface NotificationItem {

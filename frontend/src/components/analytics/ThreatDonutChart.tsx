@@ -16,12 +16,9 @@ export default function ThreatDonutChart() {
   const matchOffset = c * (1 - matchPct / 100);
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
+    <div className="card-flash-emerald" style={{
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',

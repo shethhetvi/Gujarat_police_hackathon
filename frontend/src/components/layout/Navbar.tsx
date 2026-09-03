@@ -6,19 +6,16 @@ import {
   Bell,
   Sun,
   Moon,
-  Shield,
-  Radio,
   Zap,
   Navigation,
   ChevronDown,
   CheckCircle2,
-  AlertTriangle,
-  Clock,
-  LogOut
+  Clock
 } from 'lucide-react';
 import { OfficerProfile, NotificationItem } from '../../types';
 
 interface NavbarProps {
+  activeTab?: string;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenSearch: () => void;
@@ -43,19 +40,56 @@ export const defaultOfficer: OfficerProfile = {
   status: 'ON DUTY'
 };
 
+const TAB_TITLES: Record<string, { title: string; subtitle: string }> = {
+  dashboard: {
+    title: 'Dashboard',
+    subtitle: 'View all information & live status about Gujarat Police surveillance grid'
+  },
+  cameras: {
+    title: 'Live CCTV Surveillance Grid',
+    subtitle: 'Real-time optical streaming nodes across Gujarat state highways'
+  },
+  map: {
+    title: 'Tactical GIS Route Tracking',
+    subtitle: 'AI highway trajectory interpolation & checkpoint intercept'
+  },
+  multicam: {
+    title: 'Multi-Camera Synchronized Playback',
+    subtitle: 'Correlate suspect vehicles across multiple highway CCTV nodes'
+  },
+  watchlist: {
+    title: 'Statewide Threat Watchlist',
+    subtitle: 'Active suspect targets registered under Crime Branch & State FIRs'
+  },
+  analytics: {
+    title: 'Traffic Intelligence & AI Analytics',
+    subtitle: 'Automated vehicle classification, density trends & violation heatmaps'
+  },
+  reports: {
+    title: 'Evidence Dossier Generator',
+    subtitle: 'Court-admissible case files under Section 65B Indian Evidence Act'
+  },
+  detections: {
+    title: 'Optical Detection Audit Log',
+    subtitle: 'Chronological optical ANPR plate recognition event telemetry'
+  },
+  settings: {
+    title: 'System Settings & Calibration',
+    subtitle: 'Neural model threshold, RTSP buffer & network settings'
+  }
+};
+
 export default function Navbar({
+  activeTab = 'dashboard',
   theme,
   onToggleTheme,
   onOpenSearch,
   backendOnline,
-  wsStatus,
   notifications,
   onMarkAllNotificationsRead,
   onSimulateAlert,
   onSimulateRoute,
-  isSimulating,
-  trackPlate,
-  onTrackPlateChange
+  isSimulating
 }: NavbarProps) {
   const [istTime, setIstTime] = useState('');
   const [showOfficerMenu, setShowOfficerMenu] = useState(false);
@@ -64,28 +98,17 @@ export default function Navbar({
   const officerRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Live IST Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Kolkata',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      };
-      setIstTime(new Intl.DateTimeFormat('en-IN', options).format(now));
+      setIstTime(now.toLocaleTimeString('en-IN', { hour12: true }));
     };
     updateTime();
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Close popovers on click outside
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (officerRef.current && !officerRef.current.contains(e.target as Node)) {
@@ -100,185 +123,125 @@ export default function Navbar({
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const currentTabInfo = TAB_TITLES[activeTab] || TAB_TITLES.dashboard;
 
   return (
-    <header className="app-header" style={{
-      height: '86px',
-      background: 'linear-gradient(90deg, #071120 0%, #0F2744 50%, #071120 100%)',
-      borderBottom: '2px solid rgba(255, 255, 255, 0.14)',
+    <header style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 2rem',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
-      boxShadow: '0 8px 28px rgba(0, 0, 0, 0.35)'
+      padding: '1.25rem 2rem 1rem 2rem',
+      background: 'transparent',
+      gap: '1rem',
+      flexWrap: 'wrap'
     }}>
-      {/* ── Left: Official Gujarat Police Seal & Title (Large & Bold) ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', flexShrink: 0 }}>
-        <div style={{
-          width: '52px',
-          height: '52px',
-          borderRadius: '14px',
-          background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#FCD34D',
-          border: '2px solid #FCD34D',
-          boxShadow: '0 0 16px rgba(252, 211, 77, 0.45)'
+      {/* ── Left: Clean Dashboard Title & Subtitle (Solar Sync Style) ── */}
+      <div>
+        <h1 style={{
+          fontSize: '1.75rem',
+          fontWeight: 800,
+          color: 'var(--text-heading, #111827)',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.15,
+          margin: 0
         }}>
-          <Shield size={30} style={{ strokeWidth: 2.4 }} />
-        </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span style={{
-              fontWeight: 900,
-              fontSize: '1.45rem',
-              color: '#FFFFFF',
-              letterSpacing: '0.03em',
-              lineHeight: 1.15
-            }}>
-              GUJARAT POLICE
-            </span>
-            <span style={{
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              padding: '3px 10px',
-              borderRadius: '6px',
-              background: '#10B981',
-              color: '#FFFFFF',
-              letterSpacing: '0.04em',
-              boxShadow: '0 2px 10px rgba(16, 185, 129, 0.45)'
-            }}>
-              ICCC NETRAM
-            </span>
-          </div>
-          <div style={{
-            fontSize: '0.82rem',
-            color: '#94A3B8',
-            fontWeight: 600,
-            lineHeight: 1.25,
-            marginTop: '3px'
-          }}>
-            Integrated Command & Control Centre · Smart Surveillance Grid
-          </div>
-        </div>
+          {currentTabInfo.title}
+        </h1>
+        <p style={{
+          fontSize: '0.82rem',
+          color: 'var(--text-muted, #6B7280)',
+          fontWeight: 500,
+          marginTop: '4px',
+          margin: '4px 0 0 0'
+        }}>
+          {currentTabInfo.subtitle}
+        </p>
       </div>
 
-      {/* ── Center: Large High-Contrast Search Capsule ── */}
-      <div style={{ flex: 1, maxWidth: '440px', margin: '0 2rem' }}>
+      {/* ── Right: Search Pill + Demo Actions + Clock + Notifications + Profile (Solar Sync Style) ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Search Bar Capsule with Circular Emerald Button */}
         <div
           onClick={onOpenSearch}
           style={{
             display: 'flex',
             alignItems: 'center',
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: '1.5px solid rgba(255, 255, 255, 0.22)',
+            background: 'var(--bg-card, #FFFFFF)',
+            border: '1.5px solid var(--border, #D5E2DC)',
             borderRadius: '9999px',
-            padding: '6px 8px 6px 20px',
+            padding: '4px 6px 4px 18px',
             cursor: 'pointer',
-            boxShadow: 'inset 0 1px 4px rgba(0, 0, 0, 0.3)',
-            transition: 'all 0.15s ease'
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+            transition: 'all 0.15s ease',
+            width: '260px'
           }}
         >
-          <span style={{ flex: 1, fontSize: '0.94rem', color: '#E2E8F0', fontWeight: 500 }}>
-            Search plate, camera, alert…
-          </span>
-          <kbd style={{
-            background: 'rgba(255, 255, 255, 0.16)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            borderRadius: '6px',
-            padding: '3px 7px',
-            fontSize: '0.72rem',
-            fontFamily: 'monospace',
-            color: '#CBD5E1',
-            marginRight: '10px'
+          <span style={{
+            flex: 1,
+            fontSize: '0.85rem',
+            color: '#9CA3AF',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
-            Ctrl+K
-          </kbd>
+            Search…
+          </span>
           <div style={{
-            width: '38px',
-            height: '38px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
             background: '#10B981',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#FFFFFF',
-            boxShadow: '0 3px 10px rgba(16, 185, 129, 0.45)'
+            flexShrink: 0,
+            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)'
           }}>
-            <Search size={18} />
+            <Search size={15} />
           </div>
         </div>
-      </div>
 
-      {/* ── Right: Multi-Contrast Controls Cluster (Scaled Up) ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
-        {/* Live IST Clock */}
+        {/* Live IST Clock Pill */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.45rem',
-          padding: '0.55rem 0.9rem',
-          borderRadius: '12px',
-          background: 'rgba(255, 255, 255, 0.08)',
-          border: '1.5px solid rgba(255, 255, 255, 0.18)',
-          fontSize: '0.86rem',
-          fontWeight: 800,
-          color: '#FCD34D',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-        }}>
-          <Clock size={16} style={{ color: '#FCD34D' }} />
-          <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST Clock'}</span>
-        </div>
-
-        {/* Backend & WS Status Pill */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          padding: '0.55rem 0.85rem',
-          borderRadius: '12px',
-          background: backendOnline ? 'rgba(34, 197, 94, 0.18)' : 'rgba(245, 158, 11, 0.18)',
-          border: `1.5px solid ${backendOnline ? 'rgba(34, 197, 94, 0.5)' : 'rgba(245, 158, 11, 0.5)'}`,
+          gap: '0.35rem',
+          padding: '0.4rem 0.75rem',
+          borderRadius: '9999px',
+          background: 'var(--bg-card, #FFFFFF)',
+          border: '1.5px solid var(--border, #D5E2DC)',
           fontSize: '0.78rem',
-          fontWeight: 800
+          fontWeight: 700,
+          color: 'var(--text-heading, #374151)',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
         }}>
-          <span style={{
-            width: '9px',
-            height: '9px',
-            borderRadius: '50%',
-            background: backendOnline ? '#22C55E' : '#F59E0B',
-            boxShadow: backendOnline ? '0 0 10px #22C55E' : '0 0 10px #F59E0B'
-          }} />
-          <span style={{ color: backendOnline ? '#4ADE80' : '#FCD34D' }}>
-            {backendOnline ? 'GRID ONLINE' : 'SIMULATOR'}
-          </span>
+          <Clock size={13} style={{ color: '#10B981' }} />
+          <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST'}</span>
         </div>
 
-        {/* Demo Simulation Action Buttons */}
+        {/* Demo Simulator Buttons */}
         <button
           onClick={onSimulateAlert}
           disabled={isSimulating}
           style={{
-            padding: '0.55rem 1rem',
-            borderRadius: '12px',
+            padding: '0.42rem 0.8rem',
+            borderRadius: '9999px',
             border: 'none',
-            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+            background: '#EF4444',
             color: '#FFFFFF',
-            fontSize: '0.84rem',
+            fontSize: '0.76rem',
             fontWeight: 800,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 3px 10px rgba(239, 68, 68, 0.4)'
+            gap: '5px',
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
           }}
-          title="Simulate Real-time ANPR Alert"
+          title="Trigger Demo ANPR Intercept Alert"
         >
-          <Zap size={15} />
+          <Zap size={13} />
           <span>{isSimulating ? '…' : 'Sim Alert'}</span>
         </button>
 
@@ -286,93 +249,63 @@ export default function Navbar({
           onClick={onSimulateRoute}
           disabled={isSimulating}
           style={{
-            padding: '0.55rem 1rem',
-            borderRadius: '12px',
+            padding: '0.42rem 0.8rem',
+            borderRadius: '9999px',
             border: 'none',
-            background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+            background: '#2563EB',
             color: '#FFFFFF',
-            fontSize: '0.84rem',
+            fontSize: '0.76rem',
             fontWeight: 800,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 3px 10px rgba(37, 99, 235, 0.4)'
+            gap: '5px',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
           }}
-          title="Simulate Highway Route"
+          title="Simulate Highway Checkpoint Route"
         >
-          <Navigation size={15} />
+          <Navigation size={13} />
           <span>Sim Route</span>
         </button>
 
-        {/* Light / Dark Mode Toggle Button */}
-        <button
-          onClick={onToggleTheme}
-          style={{
-            padding: '0.55rem 0.95rem',
-            borderRadius: '12px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: '1.5px solid rgba(255, 255, 255, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            color: '#FFFFFF',
-            cursor: 'pointer',
-            fontSize: '0.82rem',
-            fontWeight: 800
-          }}
-          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-        >
-          {theme === 'light' ? (
-            <>
-              <Moon size={16} style={{ color: '#38BDF8' }} />
-              <span>Dark</span>
-            </>
-          ) : (
-            <>
-              <Sun size={16} style={{ color: '#FCD34D' }} />
-              <span>Light</span>
-            </>
-          )}
-        </button>
-
-        {/* Notification Bell */}
+        {/* Notification Bell (Solar Sync Style) */}
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: unreadCount > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-              border: unreadCount > 0 ? '1.5px solid #EF4444' : '1.5px solid rgba(255, 255, 255, 0.2)',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'var(--bg-card, #FFFFFF)',
+              border: '1.5px solid var(--border, #D5E2DC)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: unreadCount > 0 ? '#EF4444' : '#FFFFFF',
+              color: unreadCount > 0 ? '#EF4444' : '#6B7280',
               cursor: 'pointer',
-              position: 'relative'
+              position: 'relative',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
             }}
             title="Notifications"
           >
-            <Bell size={18} />
+            <Bell size={16} />
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                minWidth: '18px',
-                height: '18px',
-                borderRadius: '9px',
+                top: '-2px',
+                right: '-2px',
+                minWidth: '16px',
+                height: '16px',
+                borderRadius: '8px',
                 background: '#EF4444',
                 color: '#FFFFFF',
-                fontSize: '0.68rem',
-                fontWeight: 800,
+                fontSize: '0.62rem',
+                fontWeight: 900,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0 4px',
-                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.6)'
+                padding: '0 3px',
+                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
               }}>
                 {unreadCount}
               </span>
@@ -383,27 +316,27 @@ export default function Navbar({
           {showNotifications && (
             <div style={{
               position: 'absolute',
-              top: '52px',
+              top: '46px',
               right: 0,
-              width: '340px',
-              background: 'var(--bg-card)',
-              border: '1.5px solid var(--border)',
-              borderRadius: 'var(--r-xl)',
-              boxShadow: 'var(--shadow-modal)',
+              width: '320px',
+              background: 'var(--bg-card, #FFFFFF)',
+              border: '1.5px solid var(--border, #D5E2DC)',
+              borderRadius: '18px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.12)',
               zIndex: 1000,
               overflow: 'hidden'
             }}>
               <div style={{
                 padding: '0.85rem 1.15rem',
-                borderBottom: '1px solid var(--border)',
+                borderBottom: '1px solid var(--border, #E5E7EB)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'var(--bg-subtle)'
+                background: 'var(--bg-subtle, #F9FAFB)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Bell size={15} style={{ color: 'var(--primary)' }} />
-                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                  <Bell size={14} style={{ color: '#10B981' }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--text-heading)' }}>
                     Notifications
                   </span>
                 </div>
@@ -413,8 +346,8 @@ export default function Navbar({
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: 'var(--primary)',
-                      fontSize: '0.74rem',
+                      color: '#10B981',
+                      fontSize: '0.72rem',
                       fontWeight: 700,
                       cursor: 'pointer'
                     }}
@@ -424,11 +357,11 @@ export default function Navbar({
                 )}
               </div>
 
-              <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
-                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-dim)' }}>
-                    <CheckCircle2 size={28} style={{ margin: '0 auto 0.5rem', color: 'var(--success)' }} />
-                    <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>All intercepted alerts reviewed</div>
+                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#9CA3AF' }}>
+                    <CheckCircle2 size={26} style={{ margin: '0 auto 0.5rem', color: '#10B981' }} />
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>All notifications cleared</div>
                   </div>
                 ) : (
                   notifications.map(n => (
@@ -436,8 +369,7 @@ export default function Navbar({
                       key={n.id}
                       style={{
                         padding: '0.75rem 1.15rem',
-                        borderBottom: '1px solid var(--border)',
-                        background: n.read ? 'transparent' : 'var(--primary-light)',
+                        borderBottom: '1px solid var(--border, #E5E7EB)',
                         display: 'flex',
                         gap: '0.65rem',
                         alignItems: 'flex-start'
@@ -450,11 +382,8 @@ export default function Navbar({
                         <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-heading)' }}>
                           {n.title}
                         </div>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
                           {n.message}
-                        </div>
-                        <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '3px' }}>
-                          {n.timestamp}
                         </div>
                       </div>
                     </div>
@@ -465,24 +394,13 @@ export default function Navbar({
           )}
         </div>
 
-        {/* Officer Profile Badge & Dropdown */}
+        {/* Officer Avatar (Solar Sync Style) */}
         <div style={{ position: 'relative' }} ref={officerRef}>
-          <button
+          <div
             onClick={() => setShowOfficerMenu(!showOfficerMenu)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              padding: '0.35rem 0.85rem 0.35rem 0.45rem',
-              borderRadius: '14px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1.5px solid rgba(255, 255, 255, 0.18)',
-              cursor: 'pointer'
-            }}
-          >
-            <div style={{
-              width: '34px',
-              height: '34px',
+              width: '38px',
+              height: '38px',
               borderRadius: '50%',
               background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
               color: '#FFFFFF',
@@ -490,109 +408,58 @@ export default function Navbar({
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 900,
-              fontSize: '0.82rem',
-              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.4)'
-            }}>
-              JP
-            </div>
-            <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#FFFFFF' }}>
-                {defaultOfficer.name}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 600 }}>
-                #{defaultOfficer.badge_number} · Falcon-1
-              </div>
-            </div>
-            <ChevronDown size={14} style={{ color: '#94A3B8' }} />
-          </button>
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)',
+              border: '2px solid #FFFFFF'
+            }}
+            title={defaultOfficer.name}
+          >
+            JP
+          </div>
 
           {/* Officer Menu Popover */}
           {showOfficerMenu && (
             <div style={{
               position: 'absolute',
-              top: '52px',
+              top: '46px',
               right: 0,
-              width: '280px',
-              background: 'var(--bg-card)',
-              border: '1.5px solid var(--border)',
-              borderRadius: 'var(--r-xl)',
-              boxShadow: 'var(--shadow-modal)',
+              width: '240px',
+              background: 'var(--bg-card, #FFFFFF)',
+              border: '1.5px solid var(--border, #D5E2DC)',
+              borderRadius: '18px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.12)',
               zIndex: 1000,
               padding: '0.9rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', paddingBottom: '0.65rem', borderBottom: '1px solid var(--border)' }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'var(--primary)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '0.88rem'
-                }}>
-                  JP
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
-                    {defaultOfficer.name}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    {defaultOfficer.role}
-                  </div>
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.62rem',
-                    fontWeight: 700,
-                    color: 'var(--success)',
-                    marginTop: '2px'
-                  }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success)' }} />
-                    ACTIVE ON DUTY
-                  </div>
-                </div>
+              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                {defaultOfficer.name}
               </div>
-
-              <div style={{ padding: '0.65rem 0', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.72rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                  <span>Badge Number:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>#{defaultOfficer.badge_number}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                  <span>Station:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{defaultOfficer.police_station}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                  <span>Shift:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{defaultOfficer.shift}</span>
-                </div>
+              <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
+                Badge #{defaultOfficer.badge_number} · Crime Branch
               </div>
-
-              <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+              <div style={{
+                marginTop: '0.65rem',
+                paddingTop: '0.65rem',
+                borderTop: '1px solid var(--border, #E5E7EB)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>Theme</span>
                 <button
+                  onClick={onToggleTheme}
                   style={{
-                    width: '100%',
-                    padding: '0.4rem',
-                    borderRadius: 'var(--r-md)',
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-subtle)',
-                    color: 'var(--text-muted)',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border, #D5E2DC)',
+                    background: 'var(--bg-subtle, #F9FAFB)',
                     fontSize: '0.72rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.35rem',
+                    fontWeight: 700,
                     cursor: 'pointer'
                   }}
-                  onClick={() => setShowOfficerMenu(false)}
                 >
-                  <LogOut size={12} />
-                  <span>Handover Shift</span>
+                  {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
                 </button>
               </div>
             </div>

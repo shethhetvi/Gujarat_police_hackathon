@@ -50,16 +50,16 @@ export default function SplineTrendChart({
   const areaD = `${pathD} L 320 135 L 20 135 Z`;
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      borderRadius: '20px',
-      padding: '1.25rem 1.5rem',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-card)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.85rem'
-    }}>
+    <div
+      className={colorType === 'red' ? 'card-flash-crimson' : 'card-flash-blue'}
+      style={{
+        borderRadius: '20px',
+        padding: '1.25rem 1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem'
+      }}
+    >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-heading)' }}>

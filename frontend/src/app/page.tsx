@@ -286,10 +286,18 @@ export default function CommandCenter() {
           unacknowledged_alerts: prev.unacknowledged_alerts + 1
         }));
 
+        // Audio Alert Siren
+        if (newAlert.severity === 'CRITICAL') {
+          soundEffects.playAlertSiren();
+        } else {
+          soundEffects.playRadioChirp();
+        }
+
+        const tag = newAlert.classification_tag || 'WANTED_SUSPECT_FIR';
         const notif: NotificationItem = {
           id: `notif-${Date.now()}`,
-          title: `🚨 Intercept: ${newAlert.plate_number}`,
-          message: `${newAlert.severity} · Detected at ${newAlert.location_name || 'Gujarat CCTV Node'}`,
+          title: `🚨 ${tag}: ${newAlert.plate_number}`,
+          message: `${newAlert.severity} · ${newAlert.speed_kmh ? `${newAlert.speed_kmh.toFixed(0)} km/h at ` : ''}${newAlert.location_name || 'Gujarat CCTV Node'}`,
           timestamp: 'Just now',
           severity: newAlert.severity,
           read: false
@@ -298,8 +306,8 @@ export default function CommandCenter() {
 
         addToast({
           type: 'alert',
-          title: `🚨 ${newAlert.plate_number} — WATCHLIST INTERCEPT`,
-          msg: `${newAlert.severity} · ${newAlert.location_name || 'Ahmedabad Node'}`
+          title: `🚨 ${tag}: ${newAlert.plate_number}`,
+          msg: `${newAlert.severity} · ${newAlert.location_name || 'Ahmedabad Node'} (${newAlert.speed_kmh ? `${newAlert.speed_kmh.toFixed(0)} km/h` : '84 km/h'})`
         });
       }
     });
@@ -483,160 +491,191 @@ export default function CommandCenter() {
   });
 
   return (
-    <div className="app-container">
-      {/* ── Top Header Navigation ── */}
-      <Navbar
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      background: 'var(--bg-page-gradient, #D7EFE0)',
+      position: 'relative',
+      overflowX: 'hidden'
+    }}>
+      {/* Ambient Organic Green Glows (Matching Solar Sync Reference Style) */}
+      <div style={{
+        position: 'fixed',
+        top: '-80px',
+        right: '-80px',
+        width: '420px',
+        height: '420px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(52, 211, 153, 0.08) 55%, transparent 70%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+      <div style={{
+        position: 'fixed',
+        bottom: '-120px',
+        right: '25%',
+        width: '500px',
+        height: '500px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.14) 0%, transparent 70%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+
+      {/* ── Left Sidebar (Full Height 100vh, Sticky) ── */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        pendingAlertsCount={summary.unacknowledged_alerts}
+        totalCamerasCount={summary.total_cameras}
+        activeCamerasCount={summary.active_cameras}
+        watchlistCount={summary.watchlist_count}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onOpenSearch={() => setIsSearchOpen(true)}
-        backendOnline={backendOnline}
-        wsStatus={wsStatus}
-        notifications={notifications}
-        onMarkAllNotificationsRead={() => {
-          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-          addToast({ type: 'info', title: 'Notifications cleared' });
-        }}
-        onSimulateAlert={handleSimulateAlert}
-        onSimulateRoute={handleSimulateRoute}
-        isSimulating={isSimulating}
-        trackPlate={trackPlate}
-        onTrackPlateChange={setTrackPlate}
       />
 
-      {/* ── Main Operations Shell ── */}
-      <div className="app-main-layout">
-        <Sidebar
+      {/* ── Right Content Area ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative', zIndex: 1 }}>
+        {/* Top Header (Solar Sync Style: Title + Subtitle on Left, Search + Actions on Right) */}
+        <Navbar
           activeTab={activeTab}
-          onSelectTab={setActiveTab}
-          pendingAlertsCount={summary.unacknowledged_alerts}
-          totalCamerasCount={summary.total_cameras}
-          activeCamerasCount={summary.active_cameras}
-          watchlistCount={summary.watchlist_count}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          backendOnline={backendOnline}
+          wsStatus={wsStatus}
+          notifications={notifications}
+          onMarkAllNotificationsRead={() => {
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            addToast({ type: 'info', title: 'Notifications cleared' });
+          }}
+          onSimulateAlert={handleSimulateAlert}
+          onSimulateRoute={handleSimulateRoute}
+          isSimulating={isSimulating}
+          trackPlate={trackPlate}
+          onTrackPlateChange={setTrackPlate}
         />
 
-        <main className="content-viewport" style={{ background: 'var(--bg-page)', padding: '1.25rem 1.75rem' }}>
+        <main className="content-viewport" style={{ flex: 1, padding: '0 2rem 2.5rem 2rem' }}>
           {/* ────────────────────────────────────────────────────────────────
               TAB 1: COMMAND CENTER (DASHBOARD - SOLAR SYNC STYLE)
           ──────────────────────────────────────────────────────────────── */}
           {activeTab === 'dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Row 1: 4 Executive KPI Metric Cards with Speedometers (Solar Sync Style) */}
+              {/* Row 1: 4 Executive KPI Metric Cards with Speedometers (High Contrast Solar Sync Style) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
-                {/* Card 1: Optical ANPR Efficiency */}
-                <div style={{
-                  background: 'var(--bg-card)',
+                {/* Card 1: Optical ANPR Efficiency (Emerald Accent & Flash) */}
+                <div className="card-flash-emerald" style={{
                   borderRadius: '20px',
-                  padding: '1.25rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
-                      Optical ANPR Efficiency
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      <span style={{ color: '#10B981' }}>● High</span>
-                      <span style={{ color: '#F59E0B' }}>● Mod</span>
-                      <span style={{ color: '#EF4444' }}>● Low</span>
+                  <div style={{ height: '5px', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', width: '100%' }} />
+                  <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                        Optical ANPR Efficiency
+                      </span>
+                      <div style={{ display: 'flex', gap: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <span style={{ color: '#10B981', background: '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>● High</span>
+                        <span style={{ color: '#F59E0B' }}>● Mod</span>
+                        <span style={{ color: '#EF4444' }}>● Low</span>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                      98.4%
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                      <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                        98.4%
+                      </div>
+                      <SpeedometerGauge value={98} color="#10B981" />
                     </div>
-                    <SpeedometerGauge value={98} color="#10B981" />
                   </div>
                 </div>
 
-                {/* Card 2: Active CCTV Grid */}
-                <div style={{
-                  background: 'var(--bg-card)',
+                {/* Card 2: Active CCTV Grid (Amber/Gold Accent & Flash) */}
+                <div className="card-flash-amber" style={{
                   borderRadius: '20px',
-                  padding: '1.25rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
-                      Active CCTV Feeds
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      <span style={{ color: '#10B981' }}>● Online</span>
-                      <span style={{ color: '#F59E0B' }}>● Polling</span>
+                  <div style={{ height: '5px', background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 100%)', width: '100%' }} />
+                  <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                        Active CCTV Feeds
+                      </span>
+                      <div style={{ display: 'flex', gap: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <span style={{ color: '#15803D', background: '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>● Online</span>
+                        <span style={{ color: '#D97706' }}>● Polling</span>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                      {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ {summary.total_cameras}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                      <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                        {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ {summary.total_cameras}</span>
+                      </div>
+                      <SpeedometerGauge value={100} color="#F59E0B" />
                     </div>
-                    <SpeedometerGauge value={100} color="#F59E0B" />
                   </div>
                 </div>
 
-                {/* Card 3: Highway Traffic Volume */}
-                <div style={{
-                  background: 'var(--bg-card)',
+                {/* Card 3: Highway Traffic Volume (Royal Blue Accent & Flash) */}
+                <div className="card-flash-blue" style={{
                   borderRadius: '20px',
-                  padding: '1.25rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
-                      Highway Traffic Volume
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      <span style={{ color: '#10B981' }}>● High</span>
-                      <span style={{ color: '#F59E0B' }}>● Mod</span>
+                  <div style={{ height: '5px', background: 'linear-gradient(90deg, #3B82F6 0%, #1D4ED8 100%)', width: '100%' }} />
+                  <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                        Highway Traffic Volume
+                      </span>
+                      <div style={{ display: 'flex', gap: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <span style={{ color: '#1D4ED8', background: '#DBEAFE', padding: '1px 6px', borderRadius: '4px' }}>● High Scan</span>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                      {summary.total_detections.toLocaleString()}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                      <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                        {summary.total_detections.toLocaleString()}
+                      </div>
+                      <SpeedometerGauge value={75} color="#3B82F6" />
                     </div>
-                    <SpeedometerGauge value={75} color="#3B82F6" />
                   </div>
                 </div>
 
-                {/* Card 4: Weather Today & Jurisdiction Status */}
-                <div style={{
-                  background: 'var(--bg-card)',
+                {/* Card 4: Weather Today & Jurisdiction Status (Sunset Coral Accent & Flash) */}
+                <div className="card-flash-coral" style={{
                   borderRadius: '20px',
-                  padding: '1.25rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
                 }}>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    Weather today
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '0.2rem' }}>
-                    <span style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                      31°C
-                    </span>
-                    <span style={{ fontSize: '1.4rem' }}>⛅</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.6rem' }}>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      Ahmedabad City Hub
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>‹</span>
-                      <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>6</span>
-                      <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>›</span>
+                  <div style={{ height: '5px', background: 'linear-gradient(90deg, #F97316 0%, #EA580C 100%)', width: '100%' }} />
+                  <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                      Weather today
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '0.2rem' }}>
+                      <span style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                        31°C
+                      </span>
+                      <span style={{ fontSize: '1.4rem' }}>⛅</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.6rem' }}>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        Ahmedabad City Hub
+                      </span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>‹</span>
+                        <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>6</span>
+                        <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>›</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -742,16 +781,33 @@ export default function CommandCenter() {
                                 <span className="license-plate-badge" style={{ fontSize: '0.88rem', padding: '0.15rem 0.5rem' }}>
                                   {a.plate_number}
                                 </span>
-                                <span className={`police-chip police-chip-${a.severity.toLowerCase()}`} style={{ fontSize: '0.68rem' }}>
-                                  {a.severity}
-                                </span>
+                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                  <span style={{
+                                    fontSize: '0.65rem',
+                                    fontWeight: 900,
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: a.severity === 'CRITICAL' ? '#FEE2E2' : '#FEF3C7',
+                                    color: a.severity === 'CRITICAL' ? '#DC2626' : '#D97706'
+                                  }}>
+                                    {a.classification_tag || 'WANTED_SUSPECT_FIR'}
+                                  </span>
+                                  <span className={`police-chip police-chip-${a.severity.toLowerCase()}`} style={{ fontSize: '0.68rem' }}>
+                                    {a.severity}
+                                  </span>
+                                </div>
                               </div>
 
-                              <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 700, marginTop: '0.35rem' }}>
-                                📍 {a.location_name || 'Gujarat CCTV Sector'}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                                  📍 {a.location_name || 'Gujarat CCTV Sector'}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                                  ⚡ {a.speed_kmh ? `${a.speed_kmh.toFixed(0)} km/h` : '84 km/h'}
+                                </div>
                               </div>
 
-                              {/* Patrol Unit Dispatch Status */}
+                              {/* Patrol Unit Dispatch Status & Quick Intercept Actions */}
                               {assignedUnit ? (
                                 <div style={{
                                   marginTop: '0.45rem',
@@ -770,16 +826,29 @@ export default function CommandCenter() {
                                   <span>DISPATCHED: {assignedUnit}</span>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setDispatchingAlert(a);
-                                  }}
-                                  className="gov-btn gov-btn-danger gov-btn-xs"
-                                  style={{ marginTop: '0.45rem', width: '100%', fontWeight: 800 }}
-                                >
-                                  <span>🚨 DISPATCH PATROL UNIT</span>
-                                </button>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '0.45rem' }}>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setDispatchingAlert(a);
+                                    }}
+                                    className="gov-btn gov-btn-danger gov-btn-xs"
+                                    style={{ fontWeight: 800 }}
+                                  >
+                                    <span>🚨 Dispatch Unit</span>
+                                  </button>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setTrackPlate(a.plate_number);
+                                      setActiveTab('map');
+                                    }}
+                                    className="gov-btn gov-btn-primary gov-btn-xs"
+                                    style={{ fontWeight: 800 }}
+                                  >
+                                    <span>🎯 Trace Escape</span>
+                                  </button>
+                                </div>
                               )}
 
                               <div style={{
@@ -795,15 +864,22 @@ export default function CommandCenter() {
                                   <button
                                     onClick={e => {
                                       e.stopPropagation();
+                                      handleOpenDossier(a.plate_number);
+                                    }}
+                                    className="gov-btn gov-btn-outline gov-btn-xs"
+                                    title="View Section 65B Dossier"
+                                  >
+                                    📄 Sec 65B
+                                  </button>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
                                       handleAcknowledgeAlert(a.id);
                                     }}
                                     className="gov-btn gov-btn-outline gov-btn-xs"
                                   >
                                     ✓ ACK
                                   </button>
-                                  <span style={{ color: 'var(--primary)', fontWeight: 700, alignSelf: 'center' }}>
-                                    Inspect →
-                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -1034,6 +1110,7 @@ export default function CommandCenter() {
               initialPlate={trackPlate}
               onSelectPlate={setTrackPlate}
               onOpenDossier={handleOpenDossier}
+              onOpenDispatch={(alert) => setDispatchingAlert(alert)}
             />
           )}
 

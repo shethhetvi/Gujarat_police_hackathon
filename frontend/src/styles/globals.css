@@ -27,17 +27,18 @@
   --accent-green:     #10B981; /* Solar Sync Green */
   --accent-green-dark:#059669;
 
-  /* Backgrounds & Surfaces */
-  --bg-page:          #F3F8F5; /* Soft mint sage tint from reference */
+  /* Backgrounds & Surfaces (Lush Green Contrast Palette - Solar Sync Style) */
+  --bg-page:          #D7EFE0; /* Distinct, visible mint/sage green background */
+  --bg-page-gradient: linear-gradient(145deg, #E2F5EA 0%, #CEEBD9 45%, #D4EFE0 100%);
   --bg-card:          #FFFFFF;
-  --bg-subtle:        #F9FBFA;
+  --bg-subtle:        #EAF6EE;
   --bg-elevated:      #FFFFFF;
   --bg-panel:         #FFFFFF;
   --bg-input:         #FFFFFF;
 
   /* Borders */
-  --border:           #E5E7EB;
-  --border-strong:    #D1D5DB;
+  --border:           #BFDEC9; /* Soft green-tinted border */
+  --border-strong:    #A3CDAF;
   --border-focus:     #10B981;
 
   /* Text Contrast */
@@ -47,11 +48,11 @@
   --text-dim:         #6B7280;
   --text-invert:      #FFFFFF;
 
-  /* Shadows */
-  --shadow-sm:        0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-card:      0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-  --shadow-hover:     0 10px 25px -3px rgba(16, 185, 129, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-elevated:  0 14px 30px -4px rgba(0, 0, 0, 0.08);
+  /* Shadows with Green Ambient Contrast */
+  --shadow-sm:        0 2px 4px 0 rgba(16, 185, 129, 0.06);
+  --shadow-card:      0 10px 30px -4px rgba(16, 185, 129, 0.10), 0 3px 10px -1px rgba(0, 0, 0, 0.04);
+  --shadow-hover:     0 14px 35px -3px rgba(16, 185, 129, 0.20), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+  --shadow-elevated:  0 18px 40px -4px rgba(16, 185, 129, 0.14);
   --shadow-modal:     0 25px 50px -12px rgba(15, 23, 42, 0.25);
 
   /* Radii - Modern 18px / 20px pill aesthetic */
@@ -179,40 +180,107 @@ body {
   gap: 1.25rem;
 }
 
-/* ─── CARDS & SURFACES ─── */
-.gov-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* ─── CARDS & SURFACES (UNIFIED FLASH HIGHLIGHT SYSTEM) ─── */
+.gov-card,
+.card-flash-emerald,
+.card-flash-amber,
+.card-flash-blue,
+.card-flash-coral,
+.card-flash-purple,
+.card-flash-crimson {
   position: relative;
   overflow: hidden;
+  border-radius: 20px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Light shimmer sweep animation */
+.card-flash-emerald::before,
+.card-flash-amber::before,
+.card-flash-blue::before,
+.card-flash-coral::before,
+.card-flash-purple::before,
+.card-flash-crimson::before,
 .gov-card::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 2.5px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  opacity: 0.85;
+  left: -150%;
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-25deg);
+  pointer-events: none;
+  transition: left 0.75s ease;
+  z-index: 5;
 }
 
+.card-flash-emerald:hover::before,
+.card-flash-amber:hover::before,
+.card-flash-blue:hover::before,
+.card-flash-coral:hover::before,
+.card-flash-purple:hover::before,
+.card-flash-crimson:hover::before,
+.gov-card:hover::before {
+  left: 170%;
+}
+
+/* Emerald Flash Highlight (ANPR / Verified / System Ready) */
+.card-flash-emerald:hover {
+  transform: translateY(-4px);
+  border-color: #10B981 !important;
+  box-shadow: 0 16px 36px -4px rgba(16, 185, 129, 0.30), 0 0 22px rgba(16, 185, 129, 0.22) !important;
+}
+
+/* Amber/Gold Flash Highlight (Active CCTVs / Warning / Watchlist) */
+.card-flash-amber:hover {
+  transform: translateY(-4px);
+  border-color: #F59E0B !important;
+  box-shadow: 0 16px 36px -4px rgba(245, 158, 11, 0.32), 0 0 22px rgba(245, 158, 11, 0.24) !important;
+}
+
+/* Royal Blue Flash Highlight (Highway Traffic / Navigation / Trace) */
+.card-flash-blue:hover {
+  transform: translateY(-4px);
+  border-color: #3B82F6 !important;
+  box-shadow: 0 16px 36px -4px rgba(59, 130, 246, 0.32), 0 0 22px rgba(59, 130, 246, 0.24) !important;
+}
+
+/* Sunset Coral Flash Highlight (Weather / Jurisdiction / Analytics) */
+.card-flash-coral:hover {
+  transform: translateY(-4px);
+  border-color: #F97316 !important;
+  box-shadow: 0 16px 36px -4px rgba(249, 115, 22, 0.32), 0 0 22px rgba(249, 115, 22, 0.24) !important;
+}
+
+/* Purple Flash Highlight (Device Performance / Neural Ingestion) */
+.card-flash-purple:hover {
+  transform: translateY(-4px);
+  border-color: #A855F7 !important;
+  box-shadow: 0 16px 36px -4px rgba(168, 85, 247, 0.32), 0 0 22px rgba(168, 85, 247, 0.24) !important;
+}
+
+/* Crimson Flash Highlight (Critical Intercept / Red Alert) */
+.card-flash-crimson:hover {
+  transform: translateY(-4px);
+  border-color: #EF4444 !important;
+  box-shadow: 0 16px 36px -4px rgba(239, 68, 68, 0.35), 0 0 24px rgba(239, 68, 68, 0.26) !important;
+}
+
+/* Default Gov Card Hover Flash across ALL pages */
 .gov-card:hover {
-  border-color: var(--border-strong);
+  transform: translateY(-3px);
+  border-color: #10B981;
+  box-shadow: 0 14px 32px -4px rgba(16, 185, 129, 0.24), 0 0 18px rgba(16, 185, 129, 0.16);
 }
 
 .gov-card-interactive {
   cursor: pointer;
-}
-
-.gov-card-interactive:hover {
-  border-color: var(--primary-border);
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
 }
 
 .gov-card-header {

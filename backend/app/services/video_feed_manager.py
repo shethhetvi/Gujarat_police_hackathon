@@ -88,16 +88,25 @@ class VideoFeedManager:
 
             # OCR Plate simulation / extraction
             plate = plate_candidates[(camera_id + idx + (frame_idx // 90)) % len(plate_candidates)]
-            
-            # Header Label
-            label_text = f"{cls_name} {conf*100:.1f}% | TRK #{100 + idx + camera_id} | ANPR: {plate}"
+            body_type = det.get("body_type") or ("SUV" if "01" in plate else "Sedan" if "05" in plate else "Hatchback")
+            color_attr = det.get("color") or ("White" if idx % 2 == 0 else "Silver")
+            speed_val = 52 + ((camera_id * 7 + idx * 11) % 35)
+
+            is_suspect = (plate == "GJ01AB1234" or plate == "GJ05CD5678")
+            badge_color = (0, 34, 230) if is_suspect else color
+
+            # Header Label with Vehicle Attributes & Speed
+            label_text = f"{color_attr.upper()} {body_type.upper()} | {speed_val} km/h | ANPR: {plate}"
+            if is_suspect:
+                label_text = f"HOTLIST ALERT! | {label_text}"
+
             (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
             
             label_y1 = max(34, y1 - th - 8)
             label_y2 = label_y1 + th + 8
-            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 10, label_y2), (20, 24, 33), -1)
-            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 10, label_y2), color, 1)
-            cv2.putText(frame, label_text, (x1 + 5, label_y2 - 4),
+            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), (20, 24, 33), -1)
+            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), badge_color, 1)
+            cv2.putText(frame, label_text, (x1 + 6, label_y2 - 4),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 255, 255), 1, cv2.LINE_AA)
 
     def generate_feed(

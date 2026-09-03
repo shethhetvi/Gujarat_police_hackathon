@@ -14,4 +14,11 @@ class DetectionEvent(Base):
     snapshot_url = Column(String, nullable=True)
     matched = Column(Boolean, default=False)
     watchlist_entry_id = Column(Integer, ForeignKey("watchlist_entries.id"), nullable=True)
-    is_simulated = Column(Boolean, default=False)  # Transparent label for simulated fallback detections
+    is_simulated = Column(Boolean, default=False)
+
+    # Core CV & Forensics attributes
+    speed_kmh = Column(Float, default=0.0)
+    pts_timestamp = Column(Float, nullable=True)
+    vehicle_color = Column(String, default="White")
+    vehicle_type = Column(String, default="Sedan")
+    sha256_hash = Column(String, nullable=True)  # Section 65B Indian Evidence Act integrity hash

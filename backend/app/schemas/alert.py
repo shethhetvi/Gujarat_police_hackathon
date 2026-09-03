@@ -13,6 +13,10 @@ class AlertBase(BaseModel):
     acknowledged: Optional[bool] = False
     acknowledged_by: Optional[str] = None
     is_simulated: Optional[bool] = False
+    classification_tag: Optional[str] = "WANTED_SUSPECT_FIR"
+    speed_kmh: Optional[float] = 0.0
+    dispatched_unit: Optional[str] = None
+    dispatch_status: Optional[str] = "PENDING"
 
 class AlertCreate(AlertBase):
     pass

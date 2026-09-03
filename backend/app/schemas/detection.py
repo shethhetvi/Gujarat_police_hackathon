@@ -11,6 +11,11 @@ class DetectionBase(BaseModel):
     matched: Optional[bool] = False
     watchlist_entry_id: Optional[int] = None
     is_simulated: Optional[bool] = False
+    speed_kmh: Optional[float] = 0.0
+    pts_timestamp: Optional[float] = None
+    vehicle_color: Optional[str] = "White"
+    vehicle_type: Optional[str] = "Sedan"
+    sha256_hash: Optional[str] = None
 
 class DetectionCreate(DetectionBase):
     pass
