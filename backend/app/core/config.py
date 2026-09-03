@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # AI Pipeline
     YOLO_MODEL_PATH: str = "yolov8n.pt"
     CONFIDENCE_THRESHOLD: float = 0.5
+    OCR_LANGUAGES: List[str] = ["en"]
     
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
@@ -22,5 +23,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 settings = Settings()
