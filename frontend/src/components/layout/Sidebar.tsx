@@ -11,9 +11,11 @@ import {
   BarChart3,
   FileText,
   Settings,
-  ChevronRight,
-  Radio,
-  HardDrive
+  Shield,
+  UserCheck,
+  HelpCircle,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export type SidebarTab =
@@ -34,6 +36,8 @@ interface SidebarProps {
   totalCamerasCount: number;
   activeCamerasCount: number;
   watchlistCount: number;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export default function Sidebar({
@@ -42,187 +46,211 @@ export default function Sidebar({
   pendingAlertsCount,
   totalCamerasCount,
   activeCamerasCount,
-  watchlistCount
+  watchlistCount,
+  theme = 'light',
+  onToggleTheme
 }: SidebarProps) {
-  const menuItems: { id: SidebarTab; label: string; icon: React.ReactNode; badge?: string | number; badgeColor?: string }[] = [
-    {
-      id: 'dashboard',
-      label: 'Command Center',
-      icon: <LayoutDashboard size={18} />,
-      badge: pendingAlertsCount > 0 ? pendingAlertsCount : undefined,
-      badgeColor: 'var(--danger)'
-    },
-    {
-      id: 'cameras',
-      label: 'Live CCTV Grid',
-      icon: <Video size={18} />,
-      badge: `${activeCamerasCount}/${totalCamerasCount}`,
-      badgeColor: 'var(--primary)'
-    },
-    {
-      id: 'map',
-      label: 'GIS Route Tracking',
-      icon: <Navigation size={18} />
-    },
-    {
-      id: 'multicam',
-      label: 'Multi-Camera Sync',
-      icon: <Grid size={18} />,
-      badge: '4-SYNC',
-      badgeColor: 'var(--secondary)'
-    },
-    {
-      id: 'watchlist',
-      label: 'Target Watchlist',
-      icon: <Crosshair size={18} />,
-      badge: watchlistCount > 0 ? watchlistCount : undefined,
-      badgeColor: 'var(--warning)'
-    },
-    {
-      id: 'detections',
-      label: 'Detection Audit',
-      icon: <FileSearch size={18} />
-    },
-    {
-      id: 'analytics',
-      label: 'Smart Analytics',
-      icon: <BarChart3 size={18} />
-    },
-    {
-      id: 'reports',
-      label: 'Evidence Dossier',
-      icon: <FileText size={18} />,
-      badge: 'PDF',
-      badgeColor: 'var(--success)'
-    },
-    {
-      id: 'settings',
-      label: 'ICCC Settings',
-      icon: <Settings size={18} />
-    }
+  const menuItems = [
+    { id: 'dashboard' as SidebarTab, label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+    { id: 'cameras' as SidebarTab, label: 'Live CCTV Grid', icon: <Video size={18} />, badge: `${activeCamerasCount}/${totalCamerasCount}` },
+    { id: 'map' as SidebarTab, label: 'GIS Tracking', icon: <Navigation size={18} /> },
+    { id: 'multicam' as SidebarTab, label: 'Multi-Camera Sync', icon: <Grid size={18} /> },
+    { id: 'watchlist' as SidebarTab, label: 'Threat Watchlist', icon: <Crosshair size={18} />, badge: watchlistCount },
+    { id: 'analytics' as SidebarTab, label: 'Analysis', icon: <BarChart3 size={18} /> },
+    { id: 'reports' as SidebarTab, label: 'Dossier Report', icon: <FileText size={18} /> },
+  ];
+
+  const settingsItems = [
+    { id: 'detections' as SidebarTab, label: 'Detection Audit', icon: <FileSearch size={18} /> },
+    { id: 'settings' as SidebarTab, label: 'System Settings', icon: <Settings size={18} /> },
   ];
 
   return (
-    <aside className="sidebar" style={{
+    <aside style={{
       width: '240px',
-      background: 'var(--bg-panel)',
-      borderRight: '1px solid var(--border)',
+      background: '#FFFFFF',
+      borderRight: '1px solid #E5E7EB',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '1rem 0.75rem',
+      padding: '1.5rem 1rem',
       flexShrink: 0,
-      userSelect: 'none'
+      userSelect: 'none',
+      boxShadow: '2px 0 12px rgba(0, 0, 0, 0.02)'
     }}>
-      {/* Primary Navigation Items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <div style={{
-          padding: '0.5rem 0.75rem 0.65rem',
-          fontSize: '0.68rem',
-          fontWeight: 800,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--text-dim)'
-        }}>
-          Operations & Control
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Brand Logo Header (Solar Sync Style) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0 0.5rem' }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#FFFFFF',
+            boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)'
+          }}>
+            <Shield size={18} />
+          </div>
+          <div>
+            <div style={{
+              fontWeight: 900,
+              fontSize: '1.2rem',
+              color: '#10B981',
+              letterSpacing: '-0.02em',
+              fontStyle: 'italic',
+              lineHeight: 1
+            }}>
+              SentinelGrid
+            </div>
+            <div style={{ fontSize: '0.66rem', color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.04em', marginTop: '2px' }}>
+              GUJARAT POLICE ICCC
+            </div>
+          </div>
         </div>
 
-        {menuItems.map(item => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 'var(--r-md)',
-                background: isActive ? 'var(--primary-light)' : 'transparent',
-                border: '1px solid',
-                borderColor: isActive ? 'var(--primary-border)' : 'transparent',
-                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: '0.84rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textAlign: 'left'
-              }}
-              className="sidebar-nav-btn"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <span style={{ color: isActive ? 'var(--primary)' : 'var(--text-dim)' }}>
+        {/* SECTION 1: MENU */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div style={{
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            color: '#9CA3AF',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding: '0 0.75rem 0.25rem'
+          }}>
+            Menu
+          </div>
+
+          {menuItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.7rem 1rem',
+                  borderRadius: '14px',
+                  background: isActive ? '#10B981' : 'transparent',
+                  color: isActive ? '#FFFFFF' : '#4B5563',
+                  border: 'none',
+                  fontWeight: isActive ? 700 : 500,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isActive ? '0 4px 12px rgba(16, 185, 129, 0.28)' : 'none'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ color: isActive ? '#FFFFFF' : '#9CA3AF' }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </div>
+
+                {item.badge !== undefined && !isActive && (
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '9999px',
+                    background: '#F3F4F6',
+                    color: '#6B7280'
+                  }}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* SECTION 2: SETTINGS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div style={{
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            color: '#9CA3AF',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding: '0 0.75rem 0.25rem'
+          }}>
+            Settings
+          </div>
+
+          {settingsItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.7rem 1rem',
+                  borderRadius: '14px',
+                  background: isActive ? '#10B981' : 'transparent',
+                  color: isActive ? '#FFFFFF' : '#4B5563',
+                  border: 'none',
+                  fontWeight: isActive ? 700 : 500,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ color: isActive ? '#FFFFFF' : '#9CA3AF' }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
-              </div>
-
-              {item.badge !== undefined && (
-                <span style={{
-                  fontSize: '0.66rem',
-                  fontWeight: 800,
-                  padding: '0.15rem 0.45rem',
-                  borderRadius: 'var(--r-full)',
-                  background: isActive ? 'var(--primary)' : 'var(--bg-subtle)',
-                  color: isActive ? '#FFFFFF' : item.badgeColor || 'var(--text-main)',
-                  border: `1px solid ${item.badgeColor ? `${item.badgeColor}40` : 'var(--border)'}`,
-                  lineHeight: 1
-                }}>
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Node Health & Jurisdiction Footer Card */}
-      <div style={{
-        marginTop: 'auto',
-        padding: '0.85rem',
-        borderRadius: 'var(--r-md)',
-        background: 'var(--bg-subtle)',
-        border: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Radio size={14} style={{ color: 'var(--success)' }} />
-            <span style={{ fontWeight: 700, fontSize: '0.74rem', color: 'var(--text-heading)' }}>
-              SURVEILLANCE NODE
-            </span>
-          </div>
-          <span style={{
-            fontSize: '0.62rem',
-            fontWeight: 800,
-            padding: '1px 5px',
-            borderRadius: '3px',
-            background: 'var(--success-light)',
-            color: 'var(--success)',
-            border: '1px solid var(--success-border)'
+      {/* BOTTOM: Light Mode Toggle Switch (Exact Reference Style!) */}
+      <div style={{ padding: '0 0.5rem' }}>
+        <div
+          onClick={onToggleTheme}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            cursor: 'pointer',
+            padding: '0.5rem 0'
+          }}
+        >
+          {/* Pill Switch */}
+          <div style={{
+            width: '44px',
+            height: '24px',
+            borderRadius: '9999px',
+            background: theme === 'light' ? '#10B981' : '#4B5563',
+            padding: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: theme === 'light' ? 'flex-end' : 'flex-start',
+            transition: 'all 0.2s ease',
+            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)'
           }}>
-            ACTIVE
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#FFFFFF',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+            }} />
+          </div>
+
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}>
+            {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
           </span>
-        </div>
-
-        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
-          Ahmedabad City Zone · Netram Grid V2
-        </div>
-
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '0.65rem',
-          color: 'var(--text-dim)',
-          fontFamily: 'var(--font-mono)',
-          paddingTop: '0.35rem',
-          borderTop: '1px solid var(--border)'
-        }}>
-          <span>AI Inference: 38ms</span>
-          <span>FPS: 30.0</span>
         </div>
       </div>
     </aside>

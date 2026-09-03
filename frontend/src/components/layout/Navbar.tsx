@@ -115,92 +115,59 @@ export default function Navbar({
       zIndex: 100,
       boxShadow: 'var(--shadow-sm)'
     }}>
-      {/* ── Left: Official Gujarat Police Seal & Title ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+      {/* ── Left: Dashboard Title & Subtitle (Solar Sync Style) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '9px',
-          background: 'linear-gradient(135deg, #0F4C81, #1E3A8A)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#FCD34D',
-          border: '1.5px solid #FCD34D',
-          boxShadow: '0 2px 6px rgba(15, 76, 129, 0.25)'
+          fontSize: '1.45rem',
+          fontWeight: 800,
+          color: '#111827',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1
         }}>
-          <Shield size={22} style={{ strokeWidth: 2.2 }} />
+          Dashboard
         </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{
-              fontWeight: 800,
-              fontSize: '1rem',
-              color: 'var(--text-heading)',
-              letterSpacing: '-0.01em',
-              lineHeight: 1.15
-            }}>
-              GUJARAT POLICE
-            </span>
-            <span style={{
-              fontSize: '0.65rem',
-              fontWeight: 800,
-              padding: '1px 5px',
-              borderRadius: '3px',
-              background: 'var(--primary-light)',
-              color: 'var(--primary)',
-              border: '1px solid var(--primary-border)'
-            }}>
-              ICCC
-            </span>
-          </div>
-          <div style={{
-            fontSize: '0.68rem',
-            color: 'var(--text-muted)',
-            fontWeight: 500,
-            lineHeight: 1.2
-          }}>
-            SentinelGrid · Smart Surveillance Grid
-          </div>
+        <div style={{
+          fontSize: '0.78rem',
+          color: '#6B7280',
+          fontWeight: 500
+        }}>
+          View all information & live status about surveillance grid
         </div>
       </div>
 
-      {/* ── Center: Global Search Bar (Ctrl+K) ── */}
-      <div style={{ flex: 1, maxWidth: '340px', margin: '0 1rem' }}>
-        <button
+      {/* ── Center: Rounded Pill Search Bar with Circular Green Button (Solar Sync Style) ── */}
+      <div style={{ flex: 1, maxWidth: '380px', margin: '0 1.5rem' }}>
+        <div
           onClick={onOpenSearch}
           style={{
-            width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.45rem 0.75rem',
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)',
-            color: 'var(--text-muted)',
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: '9999px',
+            padding: '4px 6px 4px 16px',
             cursor: 'pointer',
-            fontSize: '0.82rem',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
             transition: 'all 0.15s ease'
           }}
-          className="gov-search-trigger"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Search size={15} style={{ color: 'var(--text-dim)' }} />
-            <span>Search plate, camera, alert…</span>
-          </div>
-          <kbd style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '4px',
-            padding: '1px 5px',
-            fontSize: '0.68rem',
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--text-muted)'
+          <span style={{ flex: 1, fontSize: '0.84rem', color: '#9CA3AF' }}>
+            Search plate, camera, alert…
+          </span>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#10B981',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#FFFFFF',
+            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
           }}>
-            Ctrl+K
-          </kbd>
-        </button>
+            <Search size={15} />
+          </div>
+        </div>
       </div>
 
       {/* ── Right: IST Clock, Status, Simulators, Theme, Officer, Notifications ── */}
@@ -219,7 +186,7 @@ export default function Navbar({
           color: 'var(--text-muted)'
         }}>
           <Clock size={13} style={{ color: 'var(--primary)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)' }}>{istTime || 'IST Clock'}</span>
+          <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST Clock'}</span>
         </div>
 
         {/* Backend & WS Status Pill */}

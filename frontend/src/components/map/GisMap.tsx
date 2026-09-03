@@ -61,7 +61,7 @@ const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
       location_name: 'SG Highway, Ahmedabad',
       latitude: 23.0338,
       longitude: 72.5085,
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      timestamp: '2026-09-03T10:00:00.000Z',
       confidence: 0.985,
       matched: true
     },
@@ -71,7 +71,7 @@ const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
       location_name: 'Sector 9, Gandhinagar',
       latitude: 23.2222,
       longitude: 72.6497,
-      timestamp: new Date(Date.now() - 2700000).toISOString(),
+      timestamp: '2026-09-03T10:45:00.000Z',
       confidence: 0.972,
       matched: true
     },
@@ -81,7 +81,7 @@ const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
       location_name: 'Vadsar Circle, Vadodara',
       latitude: 22.2950,
       longitude: 73.1740,
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      timestamp: '2026-09-03T11:30:00.000Z',
       confidence: 0.968,
       matched: true
     },
@@ -91,7 +91,7 @@ const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
       location_name: 'Dumas Road, Surat',
       latitude: 21.1702,
       longitude: 72.8311,
-      timestamp: new Date(Date.now() - 900000).toISOString(),
+      timestamp: '2026-09-03T12:15:00.000Z',
       confidence: 0.991,
       matched: true
     },
@@ -101,7 +101,7 @@ const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
       location_name: 'Kalawad Road, Rajkot',
       latitude: 22.3028,
       longitude: 70.8022,
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-09-03T13:00:00.000Z',
       confidence: 0.989,
       matched: true
     }
@@ -135,9 +135,9 @@ export default function GisMap({
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
   const [showCoverageZones, setShowCoverageZones] = useState(true);
 
-  // Initialize Tactical Leaflet Map
+  // Initialize Tactical Leaflet Map safely
   useEffect(() => {
-    if (typeof window === 'undefined' || mapInstanceRef.current) return;
+    if (typeof window === 'undefined') return;
 
     import('leaflet' as any).then(leaflet => {
       L = leaflet;
@@ -149,6 +149,15 @@ export default function GisMap({
       });
 
       if (!mapContainerRef.current) return;
+
+      // Clean up previous instance or container ID to prevent "Map container is already initialized"
+      if (mapInstanceRef.current) {
+        try { mapInstanceRef.current.remove(); } catch {}
+        mapInstanceRef.current = null;
+      }
+      if ((mapContainerRef.current as any)._leaflet_id) {
+        (mapContainerRef.current as any)._leaflet_id = null;
+      }
 
       // Centered precisely on Gujarat state
       const map = L.map(mapContainerRef.current, {
@@ -170,7 +179,9 @@ export default function GisMap({
 
       // Invalidate size to ensure container fills edge-to-edge
       setTimeout(() => {
-        map.invalidateSize();
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
       }, 150);
 
       setIsMapReady(true);
@@ -178,8 +189,11 @@ export default function GisMap({
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try { mapInstanceRef.current.remove(); } catch {}
         mapInstanceRef.current = null;
+      }
+      if (mapContainerRef.current) {
+        (mapContainerRef.current as any)._leaflet_id = null;
       }
     };
   }, []);
@@ -726,7 +740,7 @@ export default function GisMap({
                 <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-heading)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {cp.location_name}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }} suppressHydrationWarning>
                   🕒 {new Date(cp.timestamp).toLocaleTimeString('en-IN')}
                 </div>
               </div>

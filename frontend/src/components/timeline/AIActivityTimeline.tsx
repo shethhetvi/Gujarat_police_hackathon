@@ -153,7 +153,7 @@ export default function AIActivityTimeline({
                       </span>
                     </div>
 
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>
                       {new Date(ev.timestamp).toLocaleTimeString('en-IN')}
                     </span>
                   </div>

@@ -220,7 +220,7 @@ export default function VehicleDetailDrawer({
                   <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#94A3B8' }}>
                     {camera?.name || 'Ahmedabad S.G. Highway'}
                   </span>
-                  <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#F87171' }}>
+                  <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#F87171' }} suppressHydrationWarning>
                     {new Date(timestamp).toLocaleTimeString('en-IN')}
                   </span>
                 </div>

@@ -400,7 +400,7 @@ export default function SmartAnalytics({
               zIndex: 5
             }}>
               <span>📍 {activeCamera?.location_name || 'Ahmedabad S.G. Highway'}</span>
-              <span style={{ color: '#FCD34D' }}>{new Date().toLocaleTimeString('en-IN')} IST</span>
+              <span style={{ color: '#FCD34D' }} suppressHydrationWarning>{new Date().toLocaleTimeString('en-IN')} IST</span>
             </div>
           </div>
 

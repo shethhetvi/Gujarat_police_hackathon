@@ -190,7 +190,7 @@ export default function GlobalSearchModal({
                               {a.severity}
                             </span>
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }} suppressHydrationWarning>
                             📍 {a.location_name || 'Gujarat CCTV Node'} · {new Date(a.timestamp).toLocaleTimeString('en-IN')}
                           </div>
                         </div>

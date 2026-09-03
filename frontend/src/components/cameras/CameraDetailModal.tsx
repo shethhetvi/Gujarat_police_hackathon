@@ -164,7 +164,7 @@ export default function CameraDetailModal({ camera, isOpen, onClose }: CameraDet
               color: '#94A3B8'
             }}>
               <span>📍 {camera.location_name}</span>
-              <span style={{ color: '#FCD34D' }}>{new Date().toLocaleTimeString('en-IN')} IST</span>
+              <span style={{ color: '#FCD34D' }} suppressHydrationWarning>{new Date().toLocaleTimeString('en-IN')} IST</span>
             </div>
           </div>
 

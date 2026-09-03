@@ -69,6 +69,11 @@ import PCRDispatchModal from '../components/dispatch/PCRDispatchModal';
 import { soundEffects } from '../services/audio';
 import { CameraModal } from '../components/cameras/CameraModal';
 import { WatchlistModal } from '../components/watchlist/WatchlistModal';
+import SpeedometerGauge from '../components/common/SpeedometerGauge';
+import DevicePerformanceBarChart from '../components/analytics/DevicePerformanceBarChart';
+import ThreatDonutChart from '../components/analytics/ThreatDonutChart';
+import SplineTrendChart from '../components/analytics/SplineTrendChart';
+import PatrolBatteryWidget from '../components/analytics/PatrolBatteryWidget';
 
 // ─── High-Grade Default Command Center Data (Ensures Zero Blank States) ──────
 const DEFAULT_CAMERAS: Camera[] = [
@@ -94,7 +99,7 @@ const DEFAULT_ALERTS: Alert[] = [
     camera_id: 1,
     camera_name: 'Ahmedabad S.G. Highway Junction',
     location_name: 'Ahmedabad S.G. Highway',
-    timestamp: new Date(Date.now() - 180000).toISOString(),
+    timestamp: '2026-09-03T10:15:00.000Z',
     snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
     acknowledged: false
   },
@@ -106,19 +111,19 @@ const DEFAULT_ALERTS: Alert[] = [
     camera_id: 3,
     camera_name: 'Surat Dumas Road Junction',
     location_name: 'Dumas Road, Surat',
-    timestamp: new Date(Date.now() - 420000).toISOString(),
+    timestamp: '2026-09-03T10:30:00.000Z',
     snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
     acknowledged: false
   }
 ];
 
 const DEFAULT_DETECTIONS: DetectionEvent[] = [
-  { id: 1, camera_id: 1, plate_number: 'GJ01AB1234', confidence: 0.985, matched: true, timestamp: new Date(Date.now() - 180000).toISOString() },
-  { id: 2, camera_id: 1, plate_number: 'GJ01XY4411', confidence: 0.978, matched: false, timestamp: new Date(Date.now() - 240000).toISOString() },
-  { id: 3, camera_id: 3, plate_number: 'GJ05CD5678', confidence: 0.991, matched: true, timestamp: new Date(Date.now() - 420000).toISOString() },
-  { id: 4, camera_id: 2, plate_number: 'GJ27EF9012', confidence: 0.965, matched: true, timestamp: new Date(Date.now() - 600000).toISOString() },
-  { id: 5, camera_id: 4, plate_number: 'GJ06MN8822', confidence: 0.982, matched: false, timestamp: new Date(Date.now() - 750000).toISOString() },
-  { id: 6, camera_id: 5, plate_number: 'GJ02PQ6633', confidence: 0.974, matched: false, timestamp: new Date(Date.now() - 900000).toISOString() },
+  { id: 1, camera_id: 1, plate_number: 'GJ01AB1234', confidence: 0.985, matched: true, timestamp: '2026-09-03T10:15:00.000Z' },
+  { id: 2, camera_id: 1, plate_number: 'GJ01XY4411', confidence: 0.978, matched: false, timestamp: '2026-09-03T10:18:00.000Z' },
+  { id: 3, camera_id: 3, plate_number: 'GJ05CD5678', confidence: 0.991, matched: true, timestamp: '2026-09-03T10:30:00.000Z' },
+  { id: 4, camera_id: 2, plate_number: 'GJ27EF9012', confidence: 0.965, matched: true, timestamp: '2026-09-03T10:45:00.000Z' },
+  { id: 5, camera_id: 4, plate_number: 'GJ06MN8822', confidence: 0.982, matched: false, timestamp: '2026-09-03T11:00:00.000Z' },
+  { id: 6, camera_id: 5, plate_number: 'GJ02PQ6633', confidence: 0.974, matched: false, timestamp: '2026-09-03T11:15:00.000Z' },
 ];
 
 interface Toast {
@@ -505,132 +510,168 @@ export default function CommandCenter() {
           totalCamerasCount={summary.total_cameras}
           activeCamerasCount={summary.active_cameras}
           watchlistCount={summary.watchlist_count}
+          theme={theme}
+          onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
         />
 
-        <main className="content-viewport">
+        <main className="content-viewport" style={{ background: '#F3F8F5', padding: '1.5rem 2rem' }}>
           {/* ────────────────────────────────────────────────────────────────
-              TAB 1: COMMAND CENTER (DASHBOARD)
+              TAB 1: COMMAND CENTER (DASHBOARD - SOLAR SYNC STYLE)
           ──────────────────────────────────────────────────────────────── */}
           {activeTab === 'dashboard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Tactical Operations Status Marquee */}
-              <div style={{
-                padding: '0.55rem 1rem',
-                background: 'linear-gradient(90deg, #0F4C81, #1E3A8A)',
-                borderRadius: 'var(--r-md)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                boxShadow: '0 2px 8px rgba(15, 76, 129, 0.25)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22C55E', animation: 'beaconPulse 1.4s infinite' }} />
-                  <span>GUJARAT POLICE NETRAM COMMAND MATRIX · STATEWIDE CCTV SECTOR ACTIVE</span>
-                </div>
-                <div style={{ display: 'flex', gap: '1.2rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                  <span>FPS: 30.2</span>
-                  <span>AI INFERENCE: 38ms</span>
-                  <span>SURVEILLANCE: 99.4%</span>
-                  <span style={{ color: '#FCD34D' }}>PATROL UNITS: 14 STANDBY</span>
-                </div>
-              </div>
-
-              {/* Row 1: 5 Executive Police KPI Metric Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                {/* Active CCTV */}
-                <div className="gov-card gov-card-interactive" onClick={() => setActiveTab('cameras')}>
-                  <div style={{ padding: '1.15rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="caption-label">Active CCTV Feeds</span>
-                      <Video size={17} style={{ color: 'var(--primary)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Row 1: 4 Executive KPI Metric Cards with Speedometers (Solar Sync Style) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+                {/* Card 1: Optical ANPR Efficiency */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '1.25rem',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                      Optical ANPR Efficiency
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                      <span style={{ color: '#10B981' }}>● High</span>
+                      <span style={{ color: '#F59E0B' }}>● Mod</span>
+                      <span style={{ color: '#EF4444' }}>● Low</span>
                     </div>
-                    <div style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--primary)', marginTop: '0.3rem' }}>
-                      {summary.active_cameras} <span style={{ fontSize: '0.95rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ {summary.total_cameras}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                      98.4%
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--success)', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }} />
-                      <span>Netram High-Speed Highway Grid</span>
-                    </div>
+                    <SpeedometerGauge value={98} color="#10B981" />
                   </div>
                 </div>
 
-                {/* Watchlist Targets */}
-                <div className="gov-card gov-card-interactive" onClick={() => setActiveTab('watchlist')}>
-                  <div style={{ padding: '1.15rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="caption-label">Watchlist Targets</span>
-                      <Crosshair size={17} style={{ color: 'var(--warning)' }} />
+                {/* Card 2: Active CCTV Grid */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '1.25rem',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                      Active CCTV Feeds
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                      <span style={{ color: '#10B981' }}>● Online</span>
+                      <span style={{ color: '#F59E0B' }}>● Polling</span>
                     </div>
-                    <div style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--warning)', marginTop: '0.3rem' }}>
-                      {summary.watchlist_count}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                      {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: '#9CA3AF', fontWeight: 600 }}>/ {summary.total_cameras}</span>
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.3rem', fontWeight: 600 }}>
-                      Active Stolen & Wanted Vehicle FIRs
-                    </div>
+                    <SpeedometerGauge value={100} color="#F59E0B" />
                   </div>
                 </div>
 
-                {/* Scanned Today */}
-                <div className="gov-card gov-card-interactive" onClick={() => setActiveTab('detections')}>
-                  <div style={{ padding: '1.15rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="caption-label">Vehicles Scanned</span>
-                      <Car size={17} style={{ color: 'var(--secondary)' }} />
+                {/* Card 3: Highway Traffic Volume */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '1.25rem',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                      Highway Traffic Volume
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                      <span style={{ color: '#10B981' }}>● High</span>
+                      <span style={{ color: '#F59E0B' }}>● Mod</span>
                     </div>
-                    <div style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--secondary)', marginTop: '0.3rem' }}>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
                       {summary.total_detections.toLocaleString()}
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.3rem', fontWeight: 600 }}>
-                      Neural ANPR Inferences Logged
-                    </div>
+                    <SpeedometerGauge value={75} color="#3B82F6" />
                   </div>
                 </div>
 
-                {/* Critical Intercepts */}
-                <div
-                  className="gov-card gov-card-interactive"
-                  onClick={() => setActiveTab('dashboard')}
-                  style={{ borderColor: summary.unacknowledged_alerts > 0 ? 'var(--danger-border)' : 'var(--border)' }}
-                >
-                  <div style={{ padding: '1.15rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="caption-label">Pending Intercepts</span>
-                      {summary.unacknowledged_alerts > 0 ? (
-                        <div className="live-beacon" />
-                      ) : (
-                        <CheckCircle2 size={17} style={{ color: 'var(--success)' }} />
-                      )}
-                    </div>
-                    <div style={{ fontSize: '2.1rem', fontWeight: 900, color: summary.unacknowledged_alerts > 0 ? 'var(--danger)' : 'var(--text-heading)', marginTop: '0.3rem' }}>
-                      {summary.unacknowledged_alerts}
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: summary.unacknowledged_alerts > 0 ? 'var(--danger)' : 'var(--success)', marginTop: '0.3rem', fontWeight: 800 }}>
-                      {summary.unacknowledged_alerts > 0 ? 'Immediate Field Dispatch Required' : 'All Clear / Monitored'}
-                    </div>
+                {/* Card 4: Weather Today & Jurisdiction Status */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '1.25rem',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 700 }}>
+                    Weather today
                   </div>
-                </div>
-
-                {/* AI Speed */}
-                <div className="gov-card">
-                  <div style={{ padding: '1.15rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="caption-label">AI Processing Speed</span>
-                      <Activity size={17} style={{ color: 'var(--success)' }} />
-                    </div>
-                    <div style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-mono)', marginTop: '0.3rem' }}>
-                      38 <span style={{ fontSize: '0.95rem', color: 'var(--text-dim)', fontWeight: 600 }}>ms</span>
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.3rem', fontWeight: 600 }}>
-                      YOLOv8 ByteTrack Neural Core
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                      31°C
+                    </span>
+                    <span style={{ fontSize: '1.4rem' }}>⛅</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.6rem' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#4B5563', fontWeight: 600 }}>
+                      Ahmedabad City Hub
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <span style={{ padding: '2px 7px', background: '#F3F4F6', borderRadius: '6px', fontSize: '0.7rem', color: '#6B7280', cursor: 'pointer' }}>‹</span>
+                      <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>6</span>
+                      <span style={{ padding: '2px 7px', background: '#F3F4F6', borderRadius: '6px', fontSize: '0.7rem', color: '#6B7280', cursor: 'pointer' }}>›</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Live CCTV Optical Surveillance Wall (Interactive Video Feed) */}
+              {/* Row 2: Device Performance Bar Chart + Threat Classification Donut */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
+                <DevicePerformanceBarChart />
+                <ThreatDonutChart />
+              </div>
+
+              {/* Row 3: Hourly Traffic Flow + Intercept Alarms + Patrol Fleet Readiness */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: '1.25rem' }}>
+                <SplineTrendChart
+                  title="Hourly Traffic Flow Rate"
+                  yAxisLabel="Y axis : Vehicles (k)"
+                  colorType="blue"
+                />
+                <SplineTrendChart
+                  title="Daily Intercept Alarms"
+                  yAxisLabel="Y axis : Alarms"
+                  colorType="red"
+                  showThreshold={true}
+                />
+                <PatrolBatteryWidget
+                  onQuickDispatch={() => {
+                    soundEffects.playDispatchConfirmed();
+                    addToast({
+                      type: 'success',
+                      title: '🚨 Rapid PCR Fleet Deployed',
+                      msg: 'Field units dispatched to highway surveillance perimeter.'
+                    });
+                  }}
+                />
+              </div>
+
+              {/* Row 4: Live CCTV Video Wall (Interactive Optical Surveillance) */}
               <LiveVideoWallWidget
                 cameras={cameras}
                 alerts={alerts}
@@ -747,7 +788,7 @@ export default function CommandCenter() {
                                 color: 'var(--text-dim)',
                                 marginTop: '0.45rem'
                               }}>
-                                <span>🕒 {new Date(a.timestamp).toLocaleTimeString('en-IN')}</span>
+                                <span suppressHydrationWarning>🕒 {new Date(a.timestamp).toLocaleTimeString('en-IN')}</span>
                                 <div style={{ display: 'flex', gap: '0.35rem' }}>
                                   <button
                                     onClick={e => {
@@ -938,7 +979,7 @@ export default function CommandCenter() {
                         zIndex: 5
                       }}>
                         <span>CAM-{String(cam.id).padStart(3, '0')}</span>
-                        <span style={{ color: '#FCD34D' }}>{new Date().toLocaleTimeString('en-IN')}</span>
+                        <span style={{ color: '#FCD34D' }} suppressHydrationWarning>{new Date().toLocaleTimeString('en-IN')}</span>
                       </div>
                     </div>
 

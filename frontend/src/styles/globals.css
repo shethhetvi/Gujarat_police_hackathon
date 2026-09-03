@@ -24,38 +24,41 @@
   --danger-light:     #FEE2E2;
   --danger-border:    #FCA5A5;
 
+  --accent-green:     #10B981; /* Solar Sync Green */
+  --accent-green-dark:#059669;
+
   /* Backgrounds & Surfaces */
-  --bg-page:          #F0F4F8;
+  --bg-page:          #F3F8F5; /* Soft mint sage tint from reference */
   --bg-card:          #FFFFFF;
-  --bg-subtle:        #F8FAFC;
+  --bg-subtle:        #F9FBFA;
   --bg-elevated:      #FFFFFF;
   --bg-panel:         #FFFFFF;
   --bg-input:         #FFFFFF;
 
   /* Borders */
-  --border:           #E2E8F0;
-  --border-strong:    #CBD5E1;
-  --border-focus:     #0F4C81;
+  --border:           #E5E7EB;
+  --border-strong:    #D1D5DB;
+  --border-focus:     #10B981;
 
-  /* Text Contrast - High Legibility Command Center Standard */
-  --text-heading:     #0A1120;
-  --text-main:        #1E293B;
-  --text-muted:       #334155;
-  --text-dim:         #475569;
+  /* Text Contrast */
+  --text-heading:     #111827;
+  --text-main:        #1F2937;
+  --text-muted:       #4B5563;
+  --text-dim:         #6B7280;
   --text-invert:      #FFFFFF;
 
   /* Shadows */
-  --shadow-sm:        0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-card:      0 1px 3px 0 rgba(15, 76, 129, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-hover:     0 8px 20px -2px rgba(15, 76, 129, 0.14), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-elevated:  0 12px 28px -4px rgba(15, 76, 129, 0.18), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-modal:     0 25px 50px -12px rgba(15, 23, 42, 0.28);
+  --shadow-sm:        0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-card:      0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-hover:     0 10px 25px -3px rgba(16, 185, 129, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-elevated:  0 14px 30px -4px rgba(0, 0, 0, 0.08);
+  --shadow-modal:     0 25px 50px -12px rgba(15, 23, 42, 0.25);
 
-  /* Radii */
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 14px;
+  /* Radii - Modern 18px / 20px pill aesthetic */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 20px;
   --r-full: 9999px;
 
   /* Fonts */
