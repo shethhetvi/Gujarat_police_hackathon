@@ -36,6 +36,8 @@ export default function CameraDetailModal({
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [testPlate, setTestPlate] = useState('GJ01AB1234');
   const [viewMode, setViewMode] = useState<'STREAM' | 'SNAPSHOT'>('STREAM');
+  const [sourceMode, setSourceMode] = useState<'auto' | 'webcam' | 'rtsp'>('auto');
+  const [streamKey, setStreamKey] = useState(Date.now());
 
   if (!isOpen || !camera) return null;
 
@@ -59,11 +61,11 @@ export default function CameraDetailModal({
     }
   };
 
-  const streamSrc = `http://localhost:8000/api/v1/cameras/${camera.id}/live-feed`;
+  const streamSrc = `http://localhost:8000/api/v1/cameras/${camera.id}/live-feed?source=${sourceMode}&t=${streamKey}`;
 
   return (
     <div className="cmd-backdrop" onClick={onClose} style={{ zIndex: 1150 }}>
-      <div className="cmd-modal" style={{ maxWidth: '720px' }} onClick={e => e.stopPropagation()}>
+      <div className="cmd-modal" style={{ maxWidth: '750px' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{
           padding: '1.25rem 1.5rem',
@@ -96,7 +98,30 @@ export default function CameraDetailModal({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Source Selector */}
+            <select
+              value={sourceMode}
+              onChange={(e) => {
+                setSourceMode(e.target.value as any);
+                setStreamKey(Date.now());
+              }}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-main)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <option value="auto">🚗 Traffic Video</option>
+              <option value="webcam">📹 Live Webcam</option>
+              <option value="rtsp">🌐 RTSP Stream</option>
+            </select>
+
             {/* View Mode Toggle */}
             <div style={{
               display: 'flex',

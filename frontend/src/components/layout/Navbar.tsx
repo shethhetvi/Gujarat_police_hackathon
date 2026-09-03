@@ -444,7 +444,7 @@ export default function Navbar({
                       }}
                     >
                       <span style={{ fontSize: '1.1rem' }}>
-                        {n.type === 'threat' ? '🚨' : n.type === 'camera' ? '📹' : 'ℹ️'}
+                        {n.severity === 'CRITICAL' || n.severity === 'HIGH' ? '🚨' : n.severity === 'INFO' ? 'ℹ️' : '📹'}
                       </span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-heading)' }}>
