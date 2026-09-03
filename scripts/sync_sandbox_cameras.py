@@ -16,15 +16,21 @@ from pathlib import Path
 # Add backend to python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
 
+import urllib.parse
 from app.core.database import SessionLocal, engine, Base
 from app.models.camera import Camera
+from app.core.config import settings
 
-SANDBOX_HOST = "live.sentinelgujarat.in"
-CATALOGUE_API = f"https://{SANDBOX_HOST}/api/ingest"
+SANDBOX_HOST = settings.SENTINEL_GRID_IP
+CDN_HOST = settings.SENTINEL_GRID_CDN_URL
+CATALOGUE_API = f"{CDN_HOST}/cameras.json"
 
 def sync_cameras(cookie_or_token=None, local_json_file=None):
     """
     Onboards cameras from the Sentinel Sandbox into SentinelGrid.
+    Adheres to Sentinel Camera Grid Integrator Guide:
+    - Catalogue: https://cctv.corp8.cloud/cameras.json
+    - Authenticated RTSP over TCP: rtsp://email:password@103.250.160.189:8554/stream/<id>
     """
     cameras_data = []
 
@@ -33,7 +39,7 @@ def sync_cameras(cookie_or_token=None, local_json_file=None):
         file_path = Path(local_json_file)
         if not file_path.exists():
             print(f"[ERROR] File '{local_json_file}' not found.")
-            print("Please make sure you saved the JSON file from https://live.sentinelgujarat.in/api/ingest in this directory.")
+            print(f"Please save the JSON file from {CATALOGUE_API} or /api/ingest in this directory.")
             return
         print(f"[1/3] Loading camera catalogue from file: {local_json_file}...")
         with open(file_path, "r") as f:
@@ -87,14 +93,25 @@ def sync_cameras(cookie_or_token=None, local_json_file=None):
         onboarded = 0
         updated = 0
         for item in cameras_data:
-            cam_id = item.get("id") or item.get("camera_id") or item.get("stream_id")
-            name = item.get("name") or item.get("location") or f"Gujarat Police Camera #{cam_id}"
+            cam_id_raw = item.get("id") or item.get("camera_id") or item.get("stream_id")
+            if isinstance(cam_id_raw, int) or (isinstance(cam_id_raw, str) and str(cam_id_raw).isdigit()):
+                cam_code = f"cam{int(cam_id_raw):02d}"
+            else:
+                cam_code = str(cam_id_raw)
+
+            name = item.get("name") or item.get("location") or f"Gujarat Police Camera {cam_code}"
             location_name = item.get("location_name") or item.get("location") or item.get("name") or "Gujarat Police Network"
             lat = item.get("latitude") or item.get("lat") or 23.0225
             lng = item.get("longitude") or item.get("lng") or 72.5714
             
-            # Form RTSP stream URL as specified in hackathon guide
-            rtsp_url = item.get("rtsp_url") or item.get("rtsp") or f"rtsp://{SANDBOX_HOST}:8554/stream/{cam_id}"
+            # Form authenticated RTSP stream URL per Sentinel Integrator Reference
+            email_enc = urllib.parse.quote(settings.SENTINEL_GRID_EMAIL, safe="")
+            pwd = settings.SENTINEL_GRID_PASSWORD
+            if pwd:
+                rtsp_url = item.get("rtsp_url") or f"rtsp://{email_enc}:{pwd}@{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_RTSP_PORT}/stream/{cam_code}"
+            else:
+                rtsp_url = item.get("rtsp_url") or f"rtsp://{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_RTSP_PORT}/stream/{cam_code}"
+
             vendor = item.get("vendor") or item.get("codec") or "Sentinel Sandbox Feed"
             is_live = item.get("live", item.get("is_active", True))
 

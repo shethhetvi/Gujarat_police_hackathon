@@ -159,37 +159,20 @@ export default function LiveVideoWallWidget({
               zIndex: 3
             }} />
 
-            {/* Road Perspective Highway Simulation Graphics */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, #0A1224 0%, #15223E 45%, #0B111F 100%)',
-              zIndex: 1
-            }}>
-              {/* Horizon & Sky Line */}
-              <div style={{ position: 'absolute', top: '35%', left: 0, right: 0, height: '1px', background: 'rgba(56, 189, 248, 0.2)' }} />
-              {/* Perspective Highway Lane Lines */}
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: '20%',
-                width: '60%',
-                height: '65%',
-                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.9))',
-                clipPath: 'polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)'
-              }} />
-              {/* Yellow Dashed Center Divider */}
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                width: '3px',
-                height: '65%',
-                transform: 'translateX(-50%)',
-                background: 'repeating-linear-gradient(180deg, #FCD34D, #FCD34D 12px, transparent 12px, transparent 24px)',
-                opacity: 0.6
-              }} />
-            </div>
+            {/* Real Live Video Stream from Backend */}
+            <img
+              key={activeCamId}
+              src={`http://localhost:8000/api/v1/cameras/${activeCamera?.id || 1}/live-feed?source=auto`}
+              alt={activeCamera?.name || 'Live CCTV Feed'}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
 
             {/* Top HUD Overlay */}
             <div style={{

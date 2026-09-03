@@ -49,7 +49,8 @@ import {
   RefreshCw,
   Search,
   Download,
-  Printer
+  Printer,
+  Eye
 } from 'lucide-react';
 
 import Navbar from '../components/layout/Navbar';
@@ -198,6 +199,8 @@ export default function CommandCenter() {
   const [trackPlate, setTrackPlate] = useState('GJ01AB1234');
   const [camStatusFilter, setCamStatusFilter] = useState('ALL');
   const [camVendorFilter, setCamVendorFilter] = useState('ALL');
+  const [gridSourceMode, setGridSourceMode] = useState<string>('auto');
+  const [gridStreamKey, setGridStreamKey] = useState<number>(Date.now());
   const [wlSearch, setWlSearch] = useState('');
   const [wlPriorityFilter, setWlPriorityFilter] = useState('ALL');
   const [detPlateFilter, setDetPlateFilter] = useState('');
@@ -927,6 +930,23 @@ export default function CommandCenter() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Live Stream Protocol / Source Selector */}
+                    <select
+                      value={gridSourceMode}
+                      onChange={e => {
+                        setGridSourceMode(e.target.value);
+                        setGridStreamKey(Date.now());
+                      }}
+                      className="gov-select"
+                      style={{ width: 'auto', padding: '0.3rem 0.65rem', fontSize: '0.78rem', background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#60A5FA', fontWeight: 700 }}
+                      title="Select video ingestion source across all CCTV grid nodes"
+                    >
+                      <option value="auto">🚗 Sentinel Traffic Video (Full AI Active)</option>
+                      <option value="grid_hls">🌐 Sentinel Grid HLS (cctv.corp8.cloud)</option>
+                      <option value="grid_rtsp">⚡ Sentinel Grid RTSP (TCP 103.250.160.189)</option>
+                      <option value="webcam">📹 Live Device Webcam</option>
+                    </select>
+
                     <select
                       value={camStatusFilter}
                       onChange={e => setCamStatusFilter(e.target.value)}
@@ -951,12 +971,16 @@ export default function CommandCenter() {
                     </select>
 
                     <button
-                      onClick={handleRefreshCameras}
+                      onClick={() => {
+                        handleRefreshCameras();
+                        setGridStreamKey(Date.now());
+                      }}
                       disabled={isRefreshingCams}
                       className="gov-btn gov-btn-outline gov-btn-sm"
+                      title="Reconnect and refresh all live video feeds"
                     >
                       <RefreshCw size={13} style={{ animation: isRefreshingCams ? 'spin 1s linear infinite' : 'none' }} />
-                      <span>{isRefreshingCams ? 'Polling…' : 'Refresh'}</span>
+                      <span>{isRefreshingCams ? 'Polling…' : 'Refresh Feeds'}</span>
                     </button>
 
                     <button
@@ -972,25 +996,54 @@ export default function CommandCenter() {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
-                gap: '1.15rem'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '1.25rem'
               }}>
                 {filteredCameras.map(cam => (
                   <div
                     key={cam.id}
                     className="gov-card gov-card-interactive"
-                    onClick={() => setInspectingCamera(cam)}
-                    style={{ overflow: 'hidden' }}
+                    style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                   >
-                    <div style={{
-                      height: '185px',
-                      background: '#070C16',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden'
-                    }}>
+                    {/* Real-time CCTV Video Stream Viewport */}
+                    <div
+                      onClick={() => setInspectingCamera(cam)}
+                      style={{
+                        height: '190px',
+                        background: '#070C16',
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {/* Live Streaming MJPEG Feed from FastAPI */}
+                      <img
+                        key={`${cam.id}-${gridStreamKey}`}
+                        src={`http://localhost:8000/api/v1/cameras/${cam.id}/live-feed?source=${gridSourceMode}&t=${gridStreamKey}`}
+                        alt={cam.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+
+                      {/* CRT Scanline Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px)',
+                        pointerEvents: 'none',
+                        zIndex: 2
+                      }} />
+
+                      {/* Top Viewport HUD */}
                       <div style={{
                         position: 'absolute',
                         top: '8px',
@@ -1000,7 +1053,8 @@ export default function CommandCenter() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         zIndex: 5,
-                        fontSize: '0.65rem'
+                        fontSize: '0.65rem',
+                        pointerEvents: 'none'
                       }}>
                         <span style={{
                           background: 'rgba(0,0,0,0.75)',
@@ -1016,34 +1070,12 @@ export default function CommandCenter() {
                           <span>{cam.is_active ? 'REC LIVE' : 'OFFLINE'}</span>
                         </span>
 
-                        <span style={{ background: 'rgba(0,0,0,0.75)', padding: '2px 6px', borderRadius: '4px', color: '#94A3B8', fontFamily: 'monospace' }}>
-                          {cam.protocol} · 1080p
+                        <span style={{ background: 'rgba(0,0,0,0.75)', padding: '2px 6px', borderRadius: '4px', color: '#38BDF8', fontFamily: 'monospace' }}>
+                          {cam.protocol} · TCP Mode · 1080p
                         </span>
                       </div>
 
-                      <div style={{
-                        width: '135px',
-                        height: '65px',
-                        border: '1.5px dashed rgba(34, 197, 94, 0.8)',
-                        borderRadius: '4px',
-                        background: 'rgba(34, 197, 94, 0.05)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        padding: '4px',
-                        zIndex: 4
-                      }}>
-                        <span style={{ fontSize: '0.52rem', color: '#22C55E', fontFamily: 'monospace', fontWeight: 700 }}>
-                          ANPR SCANNER ACTIVE
-                        </span>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.76rem', fontWeight: 900, color: '#FFFFFF', textAlign: 'center' }}>
-                          GJ01AB1234
-                        </span>
-                        <span style={{ fontSize: '0.52rem', color: '#38BDF8', fontFamily: 'monospace', textAlign: 'right' }}>
-                          98.4%
-                        </span>
-                      </div>
-
+                      {/* Bottom Viewport HUD */}
                       <div style={{
                         position: 'absolute',
                         bottom: '8px',
@@ -1053,45 +1085,64 @@ export default function CommandCenter() {
                         justifyContent: 'space-between',
                         fontSize: '0.65rem',
                         fontFamily: 'monospace',
-                        color: '#94A3B8',
-                        zIndex: 5
+                        color: '#E2E8F0',
+                        background: 'rgba(0,0,0,0.75)',
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        zIndex: 5,
+                        pointerEvents: 'none'
                       }}>
                         <span>CAM-{String(cam.id).padStart(3, '0')}</span>
-                        <span style={{ color: '#FCD34D' }} suppressHydrationWarning>{new Date().toLocaleTimeString('en-IN')}</span>
+                        <span style={{ color: '#FCD34D' }} suppressHydrationWarning>{new Date().toLocaleTimeString('en-IN')} IST</span>
                       </div>
                     </div>
 
-                    <div style={{ padding: '0.9rem 1.15rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
-                          {cam.name}
+                    {/* Camera Info and Quick Action Controls */}
+                    <div style={{ padding: '0.9rem 1.15rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
+                            {cam.name}
+                          </div>
+                          <span className={`police-chip ${cam.is_active ? 'police-chip-online' : 'police-chip-offline'}`} style={{ fontSize: '0.65rem' }}>
+                            {cam.is_active ? '● LIVE' : '○ OFFLINE'}
+                          </span>
                         </div>
-                        <span className={`police-chip ${cam.is_active ? 'police-chip-online' : 'police-chip-offline'}`} style={{ fontSize: '0.65rem' }}>
-                          {cam.is_active ? '● LIVE' : '○ OFFLINE'}
-                        </span>
+
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                          📍 {cam.location_name}
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '0.4rem 0.55rem',
+                          background: 'var(--bg-subtle)',
+                          borderRadius: 'var(--r-sm)',
+                          border: '1px solid var(--border)',
+                          marginTop: '0.6rem',
+                          fontSize: '0.7rem',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-muted)'
+                        }}>
+                          <span>{cam.latitude?.toFixed(4)}°N</span>
+                          <span>·</span>
+                          <span>{cam.longitude?.toFixed(4)}°E</span>
+                          <span>·</span>
+                          <span style={{ color: 'var(--primary)' }}>{cam.vendor || 'Hikvision'}</span>
+                        </div>
                       </div>
 
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                        📍 {cam.location_name}
-                      </div>
-
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '0.4rem 0.55rem',
-                        background: 'var(--bg-subtle)',
-                        borderRadius: 'var(--r-sm)',
-                        border: '1px solid var(--border)',
-                        marginTop: '0.6rem',
-                        fontSize: '0.7rem',
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--text-muted)'
-                      }}>
-                        <span>{cam.latitude?.toFixed(4)}°N</span>
-                        <span>·</span>
-                        <span>{cam.longitude?.toFixed(4)}°E</span>
-                        <span>·</span>
-                        <span style={{ color: 'var(--primary)' }}>{cam.vendor || 'Hikvision'}</span>
+                      {/* Quick Inspect & AI Analytics Button */}
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                        <button
+                          onClick={() => setInspectingCamera(cam)}
+                          className="gov-btn gov-btn-outline gov-btn-sm"
+                          style={{ flex: 1, fontSize: '0.74rem', padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        >
+                          <Eye size={13} />
+                          <span>Inspect Live Feed</span>
+                        </button>
                       </div>
                     </div>
                   </div>

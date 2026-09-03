@@ -114,6 +114,17 @@ export const dispatchPcrUnit = async (
   return res.data;
 };
 
+// ─── Multi-Camera Synchronized Incident Forensics ─────────────────────────
+export const runMultiCameraSync = async (params: {
+  camera_ids: number[];
+  plate_number?: string;
+  source_mode?: string;
+  sim_timestamp?: string;
+}): Promise<any> => {
+  const res = await api.post('/cameras/multi-camera-sync', params);
+  return res.data;
+};
+
 // ─── Health Check ─────────────────────────────────────────────────────────
 export const checkHealth = async (): Promise<boolean> => {
   try {

@@ -209,6 +209,7 @@ class VehicleDetector:
                                 "confidence": round(conf, 3),
                                 "is_simulated": False
                             })
+<<<<<<< HEAD
 
                 if detections or not fallback_on_empty:
                     return detections
@@ -229,6 +230,20 @@ class VehicleDetector:
                 "body_type": "SUV",
                 "color": color,
                 "confidence": 0.952,
+=======
+                return detections
+            except Exception as e:
+                logger.error(f"Error during YOLO inference: {e}")
+
+        # Fallback simulation for offline testing or environments without weights
+        if fallback_on_empty and frame is not None:
+            h, w = frame.shape[:2]
+            return [{
+                "bbox": [int(w * 0.25), int(h * 0.3), int(w * 0.75), int(h * 0.8)],
+                "class_name": "car",
+                "confidence": 0.92,
+>>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
                 "is_simulated": True
-            }
-        ]
+            }]
+
+        return []
