@@ -219,6 +219,10 @@ export default function Navbar({
           color: 'var(--text-heading, #374151)',
           boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
         }}>
+          <Clock size={13} style={{ color: '#10B981' }} />
+          <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST'}</span>
+        </div>
+
         {/* 1-Click Live Challenge Scenario Button */}
         {onRunLiveTestScenario && (
           <button
