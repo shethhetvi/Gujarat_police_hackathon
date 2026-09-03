@@ -206,31 +206,19 @@ export const CameraGrid: React.FC<CameraGridProps> = ({
                     {camera.protocol} · 1080p
                   </div>
 
-                  {/* AI Detection Overlay Box */}
-                  {camera.is_active && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%', left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '150px', height: '80px',
-                      border: '1.5px dashed rgba(16,185,129,0.7)',
-                      borderRadius: '4px',
-                      display: 'flex', flexDirection: 'column',
-                      justifyContent: 'space-between', padding: '4px 6px',
-                      background: 'rgba(16,185,129,0.06)'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: '#10b981' }}>
-                        <span>TRK #{100 + camera.id * 7 + (frameCount % 10)}</span>
-                        <span>{(94 + (frameCount % 5)).toFixed(1)}%</span>
-                      </div>
-                      <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#67e8f9', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>
-                        [ ANPR SCANNING ]
-                      </div>
-                      <div style={{ fontSize: '0.58rem', color: '#10b981', fontFamily: 'var(--font-mono)' }}>
-                        BYTETRACK_V2 · {frameCount} frames
-                      </div>
-                    </div>
-                  )}
+                  {/* Real Live Video Feed from Backend */}
+                  <img
+                    src={`http://localhost:8000/api/v1/cameras/${camera.id}/live-feed?source=auto`}
+                    alt={camera.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
 
                   {/* Bottom bar */}
                   <div style={{
