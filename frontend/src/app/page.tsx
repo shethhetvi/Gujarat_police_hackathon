@@ -516,12 +516,12 @@ export default function CommandCenter() {
           onToggleTheme={toggleTheme}
         />
 
-        <main className="content-viewport" style={{ background: 'var(--bg-page)', padding: '1.5rem 2rem' }}>
+        <main className="content-viewport" style={{ background: 'var(--bg-page)', padding: '1.25rem 1.75rem' }}>
           {/* ────────────────────────────────────────────────────────────────
               TAB 1: COMMAND CENTER (DASHBOARD - SOLAR SYNC STYLE)
           ──────────────────────────────────────────────────────────────── */}
           {activeTab === 'dashboard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Row 1: 4 Executive KPI Metric Cards with Speedometers (Solar Sync Style) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
                 {/* Card 1: Optical ANPR Efficiency */}
@@ -1497,8 +1497,8 @@ export default function CommandCenter() {
       {/* ── Toast Notifications Stack ── */}
       <div style={{
         position: 'fixed',
-        top: '68px',
-        right: '1rem',
+        top: '92px',
+        right: '1.25rem',
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',

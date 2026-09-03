@@ -103,132 +103,134 @@ export default function Navbar({
 
   return (
     <header className="app-header" style={{
-      height: '68px',
-      background: 'linear-gradient(90deg, #0A1628 0%, #0F233D 50%, #0A1628 100%)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+      height: '86px',
+      background: 'linear-gradient(90deg, #071120 0%, #0F2744 50%, #071120 100%)',
+      borderBottom: '2px solid rgba(255, 255, 255, 0.14)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 1.25rem',
+      padding: '0 2rem',
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
+      boxShadow: '0 8px 28px rgba(0, 0, 0, 0.35)'
     }}>
-      {/* ── Left: Official Gujarat Police Seal & Title (High Contrast) ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
+      {/* ── Left: Official Gujarat Police Seal & Title (Large & Bold) ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', flexShrink: 0 }}>
         <div style={{
-          width: '42px',
-          height: '42px',
-          borderRadius: '10px',
+          width: '52px',
+          height: '52px',
+          borderRadius: '14px',
           background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#FCD34D',
-          border: '1.5px solid #FCD34D',
-          boxShadow: '0 0 12px rgba(252, 211, 77, 0.35)'
+          border: '2px solid #FCD34D',
+          boxShadow: '0 0 16px rgba(252, 211, 77, 0.45)'
         }}>
-          <Shield size={24} style={{ strokeWidth: 2.2 }} />
+          <Shield size={30} style={{ strokeWidth: 2.4 }} />
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <span style={{
               fontWeight: 900,
-              fontSize: '1.08rem',
+              fontSize: '1.45rem',
               color: '#FFFFFF',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.03em',
               lineHeight: 1.15
             }}>
               GUJARAT POLICE
             </span>
             <span style={{
-              fontSize: '0.68rem',
+              fontSize: '0.8rem',
               fontWeight: 800,
-              padding: '2px 7px',
-              borderRadius: '4px',
+              padding: '3px 10px',
+              borderRadius: '6px',
               background: '#10B981',
               color: '#FFFFFF',
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+              letterSpacing: '0.04em',
+              boxShadow: '0 2px 10px rgba(16, 185, 129, 0.45)'
             }}>
               ICCC NETRAM
             </span>
           </div>
           <div style={{
-            fontSize: '0.72rem',
+            fontSize: '0.82rem',
             color: '#94A3B8',
-            fontWeight: 500,
-            lineHeight: 1.2,
-            marginTop: '2px'
+            fontWeight: 600,
+            lineHeight: 1.25,
+            marginTop: '3px'
           }}>
             Integrated Command & Control Centre · Smart Surveillance Grid
           </div>
         </div>
       </div>
 
-      {/* ── Center: Search Capsule with Emerald Action Button ── */}
-      <div style={{ flex: 1, maxWidth: '380px', margin: '0 1.5rem' }}>
+      {/* ── Center: Large High-Contrast Search Capsule ── */}
+      <div style={{ flex: 1, maxWidth: '440px', margin: '0 2rem' }}>
         <div
           onClick={onOpenSearch}
           style={{
             display: 'flex',
             alignItems: 'center',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.16)',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1.5px solid rgba(255, 255, 255, 0.22)',
             borderRadius: '9999px',
-            padding: '4px 6px 4px 16px',
+            padding: '6px 8px 6px 20px',
             cursor: 'pointer',
-            boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)',
+            boxShadow: 'inset 0 1px 4px rgba(0, 0, 0, 0.3)',
             transition: 'all 0.15s ease'
           }}
         >
-          <span style={{ flex: 1, fontSize: '0.84rem', color: '#CBD5E1' }}>
+          <span style={{ flex: 1, fontSize: '0.94rem', color: '#E2E8F0', fontWeight: 500 }}>
             Search plate, camera, alert…
           </span>
           <kbd style={{
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '4px',
-            padding: '2px 5px',
-            fontSize: '0.65rem',
+            background: 'rgba(255, 255, 255, 0.16)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            borderRadius: '6px',
+            padding: '3px 7px',
+            fontSize: '0.72rem',
             fontFamily: 'monospace',
-            color: '#94A3B8',
-            marginRight: '8px'
+            color: '#CBD5E1',
+            marginRight: '10px'
           }}>
             Ctrl+K
           </kbd>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '38px',
+            height: '38px',
             borderRadius: '50%',
             background: '#10B981',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#FFFFFF',
-            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+            boxShadow: '0 3px 10px rgba(16, 185, 129, 0.45)'
           }}>
-            <Search size={15} />
+            <Search size={18} />
           </div>
         </div>
       </div>
 
-      {/* ── Right: Multi-Contrast Controls Cluster ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+      {/* ── Right: Multi-Contrast Controls Cluster (Scaled Up) ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
         {/* Live IST Clock */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
-          padding: '0.4rem 0.75rem',
-          borderRadius: '10px',
-          background: 'rgba(255, 255, 255, 0.07)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          color: '#FCD34D'
+          gap: '0.45rem',
+          padding: '0.55rem 0.9rem',
+          borderRadius: '12px',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1.5px solid rgba(255, 255, 255, 0.18)',
+          fontSize: '0.86rem',
+          fontWeight: 800,
+          color: '#FCD34D',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
         }}>
-          <Clock size={14} style={{ color: '#FCD34D' }} />
+          <Clock size={16} style={{ color: '#FCD34D' }} />
           <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST Clock'}</span>
         </div>
 
@@ -236,20 +238,20 @@ export default function Navbar({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
-          padding: '0.35rem 0.7rem',
-          borderRadius: '10px',
-          background: backendOnline ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-          border: `1px solid ${backendOnline ? 'rgba(34, 197, 94, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
-          fontSize: '0.72rem',
+          gap: '0.45rem',
+          padding: '0.55rem 0.85rem',
+          borderRadius: '12px',
+          background: backendOnline ? 'rgba(34, 197, 94, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+          border: `1.5px solid ${backendOnline ? 'rgba(34, 197, 94, 0.5)' : 'rgba(245, 158, 11, 0.5)'}`,
+          fontSize: '0.78rem',
           fontWeight: 800
         }}>
           <span style={{
-            width: '8px',
-            height: '8px',
+            width: '9px',
+            height: '9px',
             borderRadius: '50%',
             background: backendOnline ? '#22C55E' : '#F59E0B',
-            boxShadow: backendOnline ? '0 0 8px #22C55E' : '0 0 8px #F59E0B'
+            boxShadow: backendOnline ? '0 0 10px #22C55E' : '0 0 10px #F59E0B'
           }} />
           <span style={{ color: backendOnline ? '#4ADE80' : '#FCD34D' }}>
             {backendOnline ? 'GRID ONLINE' : 'SIMULATOR'}
@@ -261,22 +263,22 @@ export default function Navbar({
           onClick={onSimulateAlert}
           disabled={isSimulating}
           style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '10px',
+            padding: '0.55rem 1rem',
+            borderRadius: '12px',
             border: 'none',
-            background: '#EF4444',
+            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
             color: '#FFFFFF',
-            fontSize: '0.76rem',
+            fontSize: '0.84rem',
             fontWeight: 800,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
-            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
+            gap: '6px',
+            boxShadow: '0 3px 10px rgba(239, 68, 68, 0.4)'
           }}
           title="Simulate Real-time ANPR Alert"
         >
-          <Zap size={13} />
+          <Zap size={15} />
           <span>{isSimulating ? '…' : 'Sim Alert'}</span>
         </button>
 
@@ -284,22 +286,22 @@ export default function Navbar({
           onClick={onSimulateRoute}
           disabled={isSimulating}
           style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '10px',
+            padding: '0.55rem 1rem',
+            borderRadius: '12px',
             border: 'none',
-            background: '#2563EB',
+            background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
             color: '#FFFFFF',
-            fontSize: '0.76rem',
+            fontSize: '0.84rem',
             fontWeight: 800,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
-            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)'
+            gap: '6px',
+            boxShadow: '0 3px 10px rgba(37, 99, 235, 0.4)'
           }}
           title="Simulate Highway Route"
         >
-          <Navigation size={13} />
+          <Navigation size={15} />
           <span>Sim Route</span>
         </button>
 
@@ -307,28 +309,28 @@ export default function Navbar({
         <button
           onClick={onToggleTheme}
           style={{
-            padding: '0.35rem 0.65rem',
-            borderRadius: '10px',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.16)',
+            padding: '0.55rem 0.95rem',
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1.5px solid rgba(255, 255, 255, 0.2)',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            gap: '6px',
             color: '#FFFFFF',
             cursor: 'pointer',
-            fontSize: '0.74rem',
-            fontWeight: 700
+            fontSize: '0.82rem',
+            fontWeight: 800
           }}
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
         >
           {theme === 'light' ? (
             <>
-              <Moon size={14} style={{ color: '#38BDF8' }} />
+              <Moon size={16} style={{ color: '#38BDF8' }} />
               <span>Dark</span>
             </>
           ) : (
             <>
-              <Sun size={14} style={{ color: '#FCD34D' }} />
+              <Sun size={16} style={{ color: '#FCD34D' }} />
               <span>Light</span>
             </>
           )}
@@ -339,37 +341,38 @@ export default function Navbar({
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--r-md)',
-              background: unreadCount > 0 ? 'var(--danger-light)' : 'var(--bg-subtle)',
-              border: unreadCount > 0 ? '1px solid var(--danger-border)' : '1px solid var(--border)',
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: unreadCount > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+              border: unreadCount > 0 ? '1.5px solid #EF4444' : '1.5px solid rgba(255, 255, 255, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: unreadCount > 0 ? 'var(--danger)' : 'var(--text-muted)',
+              color: unreadCount > 0 ? '#EF4444' : '#FFFFFF',
               cursor: 'pointer',
               position: 'relative'
             }}
             title="Notifications"
           >
-            <Bell size={15} />
+            <Bell size={18} />
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-3px',
-                right: '-3px',
-                minWidth: '14px',
-                height: '14px',
-                borderRadius: '7px',
-                background: 'var(--danger)',
+                top: '-4px',
+                right: '-4px',
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '9px',
+                background: '#EF4444',
                 color: '#FFFFFF',
-                fontSize: '0.6rem',
+                fontSize: '0.68rem',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0 2px'
+                padding: '0 4px',
+                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.6)'
               }}>
                 {unreadCount}
               </span>
@@ -380,18 +383,18 @@ export default function Navbar({
           {showNotifications && (
             <div style={{
               position: 'absolute',
-              top: '40px',
+              top: '52px',
               right: 0,
-              width: '320px',
+              width: '340px',
               background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-lg)',
+              border: '1.5px solid var(--border)',
+              borderRadius: 'var(--r-xl)',
               boxShadow: 'var(--shadow-modal)',
               zIndex: 1000,
               overflow: 'hidden'
             }}>
               <div style={{
-                padding: '0.75rem 1rem',
+                padding: '0.85rem 1.15rem',
                 borderBottom: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
@@ -399,8 +402,8 @@ export default function Navbar({
                 background: 'var(--bg-subtle)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Bell size={14} style={{ color: 'var(--primary)' }} />
-                  <span style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-heading)' }}>
+                  <Bell size={15} style={{ color: 'var(--primary)' }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
                     Notifications
                   </span>
                 </div>
@@ -411,8 +414,8 @@ export default function Navbar({
                       background: 'transparent',
                       border: 'none',
                       color: 'var(--primary)',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
                       cursor: 'pointer'
                     }}
                   >
@@ -421,40 +424,36 @@ export default function Navbar({
                 )}
               </div>
 
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
                   <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-dim)' }}>
-                    <CheckCircle2 size={26} style={{ margin: '0 auto 0.4rem', color: 'var(--success)' }} />
-                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-main)' }}>All Clear</div>
-                    <div style={{ fontSize: '0.72rem' }}>No unread intercept notifications</div>
+                    <CheckCircle2 size={28} style={{ margin: '0 auto 0.5rem', color: 'var(--success)' }} />
+                    <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>All intercepted alerts reviewed</div>
                   </div>
                 ) : (
                   notifications.map(n => (
                     <div
                       key={n.id}
                       style={{
-                        padding: '0.65rem 0.85rem',
+                        padding: '0.75rem 1.15rem',
                         borderBottom: '1px solid var(--border)',
                         background: n.read ? 'transparent' : 'var(--primary-light)',
                         display: 'flex',
-                        gap: '0.5rem'
+                        gap: '0.65rem',
+                        alignItems: 'flex-start'
                       }}
                     >
-                      <div style={{ marginTop: '2px' }}>
-                        {n.severity === 'CRITICAL' ? (
-                          <AlertTriangle size={15} style={{ color: 'var(--danger)' }} />
-                        ) : (
-                          <Radio size={15} style={{ color: 'var(--warning)' }} />
-                        )}
-                      </div>
+                      <span style={{ fontSize: '1.1rem' }}>
+                        {n.type === 'threat' ? '🚨' : n.type === 'camera' ? '📹' : 'ℹ️'}
+                      </span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-heading)' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-heading)' }}>
                           {n.title}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                           {n.message}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '3px' }}>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '3px' }}>
                           {n.timestamp}
                         </div>
                       </div>
@@ -473,49 +472,50 @@ export default function Navbar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.25rem 0.55rem 0.25rem 0.35rem',
-              borderRadius: 'var(--r-md)',
-              background: 'var(--bg-subtle)',
-              border: '1px solid var(--border)',
+              gap: '0.65rem',
+              padding: '0.35rem 0.85rem 0.35rem 0.45rem',
+              borderRadius: '14px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1.5px solid rgba(255, 255, 255, 0.18)',
               cursor: 'pointer'
             }}
           >
             <div style={{
-              width: '26px',
-              height: '26px',
+              width: '34px',
+              height: '34px',
               borderRadius: '50%',
-              background: 'var(--primary)',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '0.72rem'
+              fontWeight: 900,
+              fontSize: '0.82rem',
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.4)'
             }}>
               JP
             </div>
-            <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-heading)' }}>
+            <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#FFFFFF' }}>
                 {defaultOfficer.name}
               </div>
-              <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>
-                #{defaultOfficer.badge_number}
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 600 }}>
+                #{defaultOfficer.badge_number} · Falcon-1
               </div>
             </div>
-            <ChevronDown size={12} style={{ color: 'var(--text-dim)' }} />
+            <ChevronDown size={14} style={{ color: '#94A3B8' }} />
           </button>
 
           {/* Officer Menu Popover */}
           {showOfficerMenu && (
             <div style={{
               position: 'absolute',
-              top: '40px',
+              top: '52px',
               right: 0,
-              width: '260px',
+              width: '280px',
               background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-lg)',
+              border: '1.5px solid var(--border)',
+              borderRadius: 'var(--r-xl)',
               boxShadow: 'var(--shadow-modal)',
               zIndex: 1000,
               padding: '0.9rem'
