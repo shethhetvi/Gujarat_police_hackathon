@@ -12,7 +12,7 @@ def get_detections(
     camera_id: Optional[int] = Query(None),
     plate_number: Optional[str] = Query(None),
     matched_only: bool = Query(False),
-    limit: int = Query(50, le=200),
+    limit: int = Query(50, le=1000),
     db: Session = Depends(get_db)
 ):
     query = db.query(DetectionEvent)

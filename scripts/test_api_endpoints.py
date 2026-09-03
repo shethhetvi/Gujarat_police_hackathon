@@ -62,8 +62,10 @@ class TestSentinelGridAPI(unittest.TestCase):
 
     def test_03_watchlist_management(self):
         """Test creating, reading, and filtering watchlist entries"""
+        import time
+        plate = f"GJ05XY{int(time.time()) % 10000:04d}"
         new_entry = {
-            "plate_number": "GJ05XY9999",
+            "plate_number": plate,
             "category": "stolen",
             "description": "Stolen Sedan - High Priority Alert",
             "priority": "CRITICAL",
@@ -72,7 +74,7 @@ class TestSentinelGridAPI(unittest.TestCase):
         res = self.client.post("/api/v1/watchlist/", json=new_entry)
         self.assertIn(res.status_code, [200, 201])
         created = res.json()
-        self.assertEqual(created["plate_number"], "GJ05XY9999")
+        self.assertEqual(created["plate_number"], plate)
 
         # Fetch watchlist list
         get_res = self.client.get("/api/v1/watchlist/")
