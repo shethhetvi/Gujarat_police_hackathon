@@ -38,7 +38,7 @@ class ANPROCREngine:
         cleaned = re.sub(r'[^A-Za-z0-9]', '', text).upper()
         return cleaned
 
-    def extract_plate(self, vehicle_crop: np.ndarray) -> Tuple[Optional[str], float, bool]:
+    def extract_plate(self, vehicle_crop: np.ndarray, allow_fallback: bool = False) -> Tuple[Optional[str], float, bool]:
         """
         Extracts license plate from vehicle crop.
         Returns: (plate_text, confidence_score, is_simulated)
@@ -52,6 +52,9 @@ class ANPROCREngine:
                         return cleaned, round(conf, 3), False
             except Exception as e:
                 logger.error(f"Error extracting plate via OCR: {e}")
+
+        if allow_fallback:
+            return "GJ01AB1234", 0.94, True
 
         # No plate detected
         return None, 0.0, False

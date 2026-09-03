@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     SENTINEL_GRID_PASSWORD: str = "NG8C-DUA8-EJ34"
     SENTINEL_GRID_IP: str = "103.250.160.189"
     SENTINEL_GRID_RTSP_PORT: int = 8554
+    SENTINEL_GRID_WHEP_PORT: int = 8889
     SENTINEL_GRID_CDN_URL: str = "https://cctv.corp8.cloud"
     
     # CORS

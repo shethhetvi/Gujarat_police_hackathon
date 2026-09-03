@@ -51,10 +51,12 @@ class VideoAnalyticsPipeline:
         frame: np.ndarray,
         camera: Camera,
         db: Session,
-        fallback_on_empty: bool = False
+        fallback_on_empty: bool = False,
+        pts_ms: Optional[float] = None
     ) -> List[Dict[str, Any]]:
         """
         Process single video frame against watchlist and persist detection audit logs.
+        Adheres to Sentinel Sandbox PTS timing rules for speed and dwell calculations.
         """
         results = []
         matching_engine = MatchingEngine(db)
@@ -64,13 +66,14 @@ class VideoAnalyticsPipeline:
         if not detections:
             return results
 
-        # 2. Tracking
-        tracked_objects = self.tracker.update(detections)
+        # 2. Tracking with Monotonic PTS (Sentinel Sandbox Specification)
+        tracked_objects = self.tracker.update(detections, pts_ms=pts_ms)
 
         # 3. ANPR & Matching for each vehicle
         for obj in tracked_objects:
             bbox = obj["bbox"]
             track_id = obj.get("tracking_id", 0)
+            dwell_ms = obj.get("dwell_ms", 0.0)
             x1, y1, x2, y2 = bbox
             
             # Crop vehicle ROI
@@ -78,7 +81,7 @@ class VideoAnalyticsPipeline:
             crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
 
             # 4. Extract Plate
-            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(crop)
+            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(crop, allow_fallback=fallback_on_empty)
             is_sim_event = obj.get("is_simulated", False) or is_simulated
 
             if plate_text:

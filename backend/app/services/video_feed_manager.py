@@ -50,10 +50,12 @@ class VideoFeedManager:
         pwd = settings.SENTINEL_GRID_PASSWORD
         if pwd:
             rtsp_url = f"rtsp://{email_encoded}:{pwd}@{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_RTSP_PORT}/stream/{cam_code}"
+            whep_url = f"http://{email_encoded}:{pwd}@{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_WHEP_PORT}/stream/{cam_code}/whep"
         else:
             rtsp_url = f"rtsp://{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_RTSP_PORT}/stream/{cam_code}"
+            whep_url = f"http://{settings.SENTINEL_GRID_IP}:{settings.SENTINEL_GRID_WHEP_PORT}/stream/{cam_code}/whep"
             
-        return hls_url, rtsp_url
+        return hls_url, rtsp_url, whep_url
 
     def draw_hud(self, frame: np.ndarray, camera_name: str, location_name: str, fps: float, pts_ms: float, source_label: str):
         h, w = frame.shape[:2]
@@ -139,7 +141,8 @@ class VideoFeedManager:
         """
         cap = None
         source_label = "Sentinel Camera Grid"
-        hls_grid_url, rtsp_grid_url = self.get_sentinel_grid_urls(camera_id)
+        hls_grid_url, rtsp_grid_url, whep_grid_url = self.get_sentinel_grid_urls(camera_id)
+        target_rtsp = rtsp_url if (source_mode == "rtsp" and rtsp_url) else rtsp_grid_url
 
         # Determine capture source
         if source_mode == "webcam":
@@ -154,17 +157,23 @@ class VideoFeedManager:
             if video_path and os.path.exists(video_path):
                 cap = cv2.VideoCapture(video_path)
         else:
-            # Auto / RTSP mode: Connect directly to live authenticated RTSP stream
-            target_rtsp = rtsp_url if (source_mode == "rtsp" and rtsp_url) else rtsp_grid_url
+            # Auto / RTSP mode: Connect directly to live authenticated RTSP stream over TCP
             source_label = f"Sentinel Grid Live (cam{camera_id:02d})"
             cap = cv2.VideoCapture(target_rtsp, cv2.CAP_FFMPEG)
             if not cap.isOpened():
-                # Fallback to HLS
+                # Fallback to CDN HLS stream
                 cap = cv2.VideoCapture(hls_grid_url, cv2.CAP_FFMPEG)
+            if not cap.isOpened():
+                # Safe fallback to local sample video for demonstration
+                video_path = self.get_sample_video_path(camera_id)
+                if video_path and os.path.exists(video_path):
+                    source_label = f"Traffic Video (cam{camera_id:02d})"
+                    cap = cv2.VideoCapture(video_path)
 
         frame_idx = 0
         last_time = time.time()
         fps = 25.0
+        backoff_delay = 2.0  # Initial reconnect backoff: 2s (Section 3 of Integrator Guide)
 
         try:
             while True:
@@ -173,13 +182,18 @@ class VideoFeedManager:
                 if cap and cap.isOpened():
                     ret, raw_frame = cap.read()
                     if not ret:
-                        # Auto-reconnect for live streams with exponential backoff
+                        # Auto-reconnect for live streams with exponential backoff (2s -> 30s cap)
                         if source_mode in ["auto", "grid_rtsp", "rtsp", "grid_hls"]:
-                            time.sleep(1.0)
-                            cap.open(target_rtsp if source_mode in ["auto", "grid_rtsp", "rtsp"] else hls_grid_url, cv2.CAP_FFMPEG)
+                            logger.warning(f"Live feed cam{camera_id:02d} interrupted. Reconnecting in {backoff_delay:.1f}s...")
+                            time.sleep(backoff_delay)
+                            backoff_delay = min(backoff_delay * 2.0, 30.0)
+                            active_url = target_rtsp if source_mode in ["auto", "grid_rtsp", "rtsp"] else hls_grid_url
+                            cap.open(active_url, cv2.CAP_FFMPEG)
                         else:
                             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                             ret, raw_frame = cap.read()
+                    else:
+                        backoff_delay = 2.0  # Reset backoff upon healthy frame read
                     
                     if ret and raw_frame is not None:
                         # Resize to standard surveillance 720p / 480p for fast web streaming

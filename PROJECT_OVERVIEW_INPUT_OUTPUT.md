@@ -246,3 +246,28 @@ npm run dev
 
 * **Frontend Command Center**: `http://localhost:3000`
 * **Backend Swagger API Documentation**: `http://localhost:8000/docs`
+
+---
+
+## 6. Official Sentinel Camera Grid Integration Compliance
+
+SentinelGrid strictly adheres to the official **Gujarat Police Sentinel Sandbox Integrator Reference**:
+
+### Protocol & Endpoint Architecture
+
+| Protocol | Endpoint Template | Intended For | Transport / Auth |
+| :--- | :--- | :--- | :--- |
+| **RTSP** | `rtsp://<email>:<pwd>@103.250.160.189:8554/stream/<id>` | AI Inference (OpenCV, GStreamer, DeepStream, YOLOv8) | Forced TCP (`rtsp_transport;tcp`), URL-encoded email |
+| **WebRTC (WHEP)** | `http://<email>:<pwd>@103.250.160.189:8889/stream/<id>/whep` | Low-latency browser preview | Direct public IP |
+| **HLS** | `https://cctv.corp8.cloud/<id>/index.m3u8` | Dashboards, mobile, restricted networks | CDN HTTPS |
+
+### Pre-Submission Checklist Verification
+
+1. ✅ **Forced RTSP over TCP**: Set globally via `os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"` in ingestion adapters and `VideoFeedManager`.
+2. ✅ **Monotonic Presentation Timestamp (PTS) Driven**: All timing, tracking, and dwell calculations use `cap.get(cv2.CAP_PROP_POS_MSEC)`. Never relies on `CAP_PROP_FPS` or arrival time, preventing velocity distortion during GOP buffer replays on connect.
+3. ✅ **Inter-frame Gap Tolerance**: Motion and tracking models compute elapsed $\Delta \text{PTS} = \text{PTS}_t - \text{PTS}_{t-1}$ rather than assuming a uniform cadence.
+4. ✅ **Exponential Backoff Auto-Reconnect**: Reconnect loop starts at 2.0s and backs off exponentially up to a 30.0s cap without tight loops.
+5. ✅ **Non-Fatal Mid-Stream Decode Warnings**: H.264/H.265 GOP join warnings (e.g. RPS / POC ref) are logged without aborting pipelines.
+6. ✅ **Dynamic Catalogue & Multi-Resolution Handling**: Ingestion accepts dynamic feeds from `/cameras.json` or `/api/ingest`, resizing dynamically to standard 720p/480p surveillance formats.
+7. ✅ **Scene Discontinuity & Loop Recovery**: Tracks detect PTS rewind or hard cuts across loop points, automatically resetting internal track galleries without generating runaway track IDs.
+8. ✅ **Load Pacing**: Feeds are opened strictly on-demand per active operator session and released in `finally` blocks.

@@ -39,6 +39,47 @@ def get_camera(camera_id: int, db: Session = Depends(get_db)):
 
 from app.services.video_feed_manager import video_feed_manager
 
+@router.get("/{camera_id}/endpoints")
+def get_camera_endpoints(camera_id: int, db: Session = Depends(get_db)):
+    """
+    Returns all 3 protocol endpoints for this camera per Sentinel Integrator Reference:
+      1. RTSP (TCP Mode): rtsp://email:password@103.250.160.189:8554/stream/camXX (AI inference)
+      2. WebRTC (WHEP): http://email:password@103.250.160.189:8889/stream/camXX/whep (Low latency preview)
+      3. HLS: https://cctv.corp8.cloud/camXX/index.m3u8 (Dashboards, mobile, restricted networks)
+    """
+    cam = db.query(Camera).filter(Camera.id == camera_id).first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    
+    hls_url, rtsp_url, whep_url = video_feed_manager.get_sentinel_grid_urls(camera_id)
+    return {
+        "camera_id": cam.id,
+        "camera_code": f"cam{cam.id:02d}",
+        "name": cam.name,
+        "location": cam.location_name,
+        "is_active": cam.is_active,
+        "endpoints": {
+            "rtsp": {
+                "protocol": "RTSP",
+                "transport": "TCP (forced)",
+                "url": rtsp_url,
+                "purpose": "AI Inference (OpenCV, GStreamer, DeepStream, YOLOv8)"
+            },
+            "webrtc": {
+                "protocol": "WebRTC (WHEP)",
+                "transport": "HTTP/WHEP",
+                "url": whep_url,
+                "purpose": "Low-latency browser preview"
+            },
+            "hls": {
+                "protocol": "HLS",
+                "transport": "HTTPS",
+                "url": hls_url,
+                "purpose": "Dashboards, mobile, restricted networks"
+            }
+        }
+    }
+
 @router.get("/{camera_id}/live-feed")
 def get_camera_live_feed(
     camera_id: int,
@@ -83,27 +124,33 @@ async def run_camera_analytics(
     if not cam:
         raise HTTPException(status_code=404, detail="Camera not found")
 
-    # Connect to live camera stream
+    # Connect to live camera stream (Sentinel Grid RTSP over TCP -> HLS fallback -> Sample Video fallback)
     hls_url, rtsp_url = video_feed_manager.get_sentinel_grid_urls(cam.id)
     target_stream = cam.stream_url if cam.stream_url and "rtsp://" in cam.stream_url else rtsp_url
     
     cap = cv2.VideoCapture(target_stream, cv2.CAP_FFMPEG)
     if not cap.isOpened():
         cap = cv2.VideoCapture(hls_url, cv2.CAP_FFMPEG)
+    if not cap.isOpened():
+        sample_path = video_feed_manager.get_sample_video_path(cam.id)
+        if sample_path and os.path.exists(sample_path):
+            cap = cv2.VideoCapture(sample_path)
     
     frame = None
+    pts_ms = 0.0
     if cap.isOpened():
         ret, raw = cap.read()
         if ret and raw is not None:
             frame = raw
+            pts_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
         cap.release()
 
     if frame is None:
         raise HTTPException(status_code=503, detail=f"Unable to capture live frame from camera {cam.name}")
 
-    # Process frame through live AI pipeline
+    # Process frame through live AI pipeline with Monotonic PTS
     video_pipeline.reported_tracks.clear()
-    results = await video_pipeline.process_frame(frame, cam, db)
+    results = await video_pipeline.process_frame(frame, cam, db, pts_ms=pts_ms)
 
     # If plate_number was specifically requested for screening, check match
     target_plate = "".join(c for c in (plate_number or "") if c.isalnum()).upper()
