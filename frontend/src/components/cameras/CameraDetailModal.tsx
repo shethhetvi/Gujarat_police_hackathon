@@ -210,20 +210,23 @@ export default function CameraDetailModal({
                 }}
               />
             ) : (
-              /* High-Res AI Detection Snapshot Preview */
               <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', position: 'relative' }}>
-                <img
-                  src={analysisResult?.snapshot_url ? `http://localhost:8000${analysisResult.snapshot_url}` : "http://localhost:8000/snapshots/snap_GJ01AB1234_1788415097657.jpg"}
-                  alt="AI Detection Snapshot"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  onError={(e) => {
-                    // Fallback visual
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                <div style={{ position: 'absolute', bottom: '10px', left: '12px', background: 'rgba(0,0,0,0.8)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.72rem', color: '#67E8F9', fontFamily: 'monospace' }}>
-                  🎯 ANPR BOUNDING BOX CROP · {analysisResult?.detection?.plate_number || testPlate} ({(analysisResult?.detection?.confidence ? analysisResult.detection.confidence * 100 : 96.4).toFixed(1)}% OCR MATCH)
-                </div>
+                {analysisResult?.snapshot_url ? (
+                  <img
+                    src={`http://localhost:8000${analysisResult.snapshot_url}`}
+                    alt="AI Detection Snapshot"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    Click "Run Analytics" to capture a live frame & snapshot
+                  </div>
+                )}
+                {analysisResult && (
+                  <div style={{ position: 'absolute', bottom: '10px', left: '12px', background: 'rgba(0,0,0,0.8)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.72rem', color: '#67E8F9', fontFamily: 'monospace' }}>
+                    🎯 ANPR CROPPED ROI · {analysisResult?.detection?.plate_number || 'Detected Vehicle'}
+                  </div>
+                )}
               </div>
             )}
 

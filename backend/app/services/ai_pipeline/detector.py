@@ -50,18 +50,8 @@ class VehicleDetector:
                                 "confidence": round(conf, 3),
                                 "is_simulated": False
                             })
-                if detections or not fallback_on_empty:
-                    return detections
+                return detections
             except Exception as e:
                 logger.error(f"Error during YOLO inference: {e}")
 
-        # Transparent Simulated Fallback for synthetic/testing environments
-        h, w = frame.shape[:2] if frame is not None else (720, 1280)
-        return [
-            {
-                "bbox": [int(w * 0.2), int(h * 0.4), int(w * 0.6), int(h * 0.85)],
-                "class_name": "car",
-                "confidence": 0.94,
-                "is_simulated": True
-            }
-        ]
+        return []

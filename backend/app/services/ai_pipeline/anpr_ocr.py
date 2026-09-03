@@ -53,5 +53,5 @@ class ANPROCREngine:
             except Exception as e:
                 logger.error(f"Error extracting plate via OCR: {e}")
 
-        # Fallback simulation
-        return "GJ01AB1234", 0.92, True
+        # No plate detected
+        return None, 0.0, False
