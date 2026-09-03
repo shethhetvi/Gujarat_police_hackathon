@@ -117,9 +117,10 @@ export default function CameraDetailModal({
                 cursor: 'pointer'
               }}
             >
-              <option value="auto">🚗 Traffic Video</option>
+              <option value="auto">🚗 Sentinel Traffic Video</option>
+              <option value="grid_hls">🌐 Sentinel Grid HLS (cctv.corp8.cloud)</option>
+              <option value="grid_rtsp">⚡ Sentinel Grid RTSP (103.250.160.189)</option>
               <option value="webcam">📹 Live Webcam</option>
-              <option value="rtsp">🌐 RTSP Stream</option>
             </select>
 
             {/* View Mode Toggle */}
