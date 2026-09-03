@@ -9,6 +9,12 @@ export interface Camera {
   longitude: number;
   is_active: boolean;
   created_at?: string;
+  // Computed / simulated telemetry for ICCC command center
+  fps?: number;
+  latency_ms?: number;
+  packet_loss?: number;
+  resolution?: string;
+  uptime_pct?: number;
 }
 
 export interface CameraCreate {
@@ -55,6 +61,8 @@ export interface DetectionEvent {
   matched: boolean;
   watchlist_entry_id?: number;
   is_simulated?: boolean;
+  vehicle_type?: string;
+  speed_kmh?: number;
 }
 
 export interface Alert {
@@ -82,4 +90,47 @@ export interface AnalyticsSummary {
   watchlist_count: number;
   total_detections: number;
   unacknowledged_alerts: number;
+}
+
+export interface OfficerProfile {
+  name: string;
+  badge_number: string;
+  role: string;
+  police_station: string;
+  district: string;
+  shift: string;
+  status: 'ON DUTY' | 'DISPATCHED' | 'STANDBY';
+}
+
+export interface RouteCheckpoint {
+  detection_id?: number;
+  camera_id: number;
+  camera_name: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  confidence?: number;
+  snapshot_url?: string;
+  matched?: boolean;
+  is_simulated?: boolean;
+}
+
+export interface VehicleRouteResponse {
+  plate_number: string;
+  category?: string;
+  priority?: string;
+  checkpoints_count: number;
+  checkpoints: RouteCheckpoint[];
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  read: boolean;
+  linkTab?: string;
+  targetId?: number;
 }

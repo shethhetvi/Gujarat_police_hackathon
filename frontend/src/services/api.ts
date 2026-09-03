@@ -80,6 +80,17 @@ export const triggerSimulatedRoute = async (plateNumber: string = 'GJ01AB1234'):
   return res.data;
 };
 
+export const getTrafficMetrics = async (): Promise<any> => {
+  const res = await api.get('/analytics/traffic-metrics');
+  return res.data;
+};
+
+export const triggerTrafficShootFrame = async (cameraId?: number, vehicleCount: number = 3): Promise<any> => {
+  const url = `/analytics/traffic-shoot-frame?${cameraId ? `camera_id=${cameraId}&` : ''}vehicle_count=${vehicleCount}`;
+  const res = await api.post(url);
+  return res.data;
+};
+
 // ─── Health Check ─────────────────────────────────────────────────────────
 export const checkHealth = async (): Promise<boolean> => {
   try {
