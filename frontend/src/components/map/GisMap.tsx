@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Alert } from '../../types';
 import { getVehicleRoute } from '../../services/api';
 
@@ -9,327 +10,384 @@ interface GisMapProps {
   onSelectPlate?: (plate: string) => void;
 }
 
+// We dynamically import Leaflet to avoid SSR issues
+let L: any = null;
+
 export const GisMap: React.FC<GisMapProps> = ({ cameras, alerts, selectedPlate, onSelectPlate }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const routeLayerRef = useRef<any>(null);
+
   const [routeData, setRouteData] = useState<any>(null);
   const [searchPlate, setSearchPlate] = useState(selectedPlate || 'GJ01AB1234');
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const [routeError, setRouteError] = useState('');
 
+  // Load Leaflet dynamically (client only)
   useEffect(() => {
-    if (selectedPlate) {
+    if (typeof window === 'undefined') return;
+
+    const initMap = async () => {
+      try {
+        L = await import('leaflet' as any);
+
+        // Fix default icon paths for Next.js
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+
+        if (!mapRef.current || leafletMapRef.current) return;
+
+        // Center on Gujarat
+        const map = L.map(mapRef.current, {
+          center: [22.5, 72.0],
+          zoom: 7,
+          zoomControl: true,
+        });
+
+        // OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(map);
+
+        leafletMapRef.current = map;
+        setMapReady(true);
+      } catch (err) {
+        console.error('Failed to init Leaflet:', err);
+      }
+    };
+
+    initMap();
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Camera markers
+  useEffect(() => {
+    if (!leafletMapRef.current || !mapReady || !L) return;
+
+    // Remove old markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    cameras.forEach(cam => {
+      if (!cam.latitude || !cam.longitude) return;
+
+      const hasAlert = alerts.some(a => a.camera_id === cam.id);
+      const isRouteCheckpoint = routeData?.checkpoints?.some((cp: any) => cp.camera_id === cam.id);
+
+      // Custom icon
+      const iconHtml = `
+        <div style="
+          width:30px;height:30px;border-radius:50%;
+          background:${isRouteCheckpoint ? '#0891b2' : hasAlert ? '#dc2626' : '#1d4ed8'};
+          border:3px solid #fff;
+          box-shadow:0 2px 8px rgba(0,0,0,0.35);
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;
+          ${isRouteCheckpoint ? 'animation:none;' : ''}
+        ">📹</div>
+      `;
+
+      const icon = L.divIcon({
+        html: iconHtml,
+        className: '',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -18]
+      });
+
+      const marker = L.marker([cam.latitude, cam.longitude], { icon });
+
+      const popupContent = `
+        <div style="font-family:Inter,sans-serif;min-width:200px">
+          <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">
+            ${isRouteCheckpoint ? '🎯 Route Checkpoint' : hasAlert ? '🚨 Alert Active' : '📹 Camera Node'}
+          </div>
+          <div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:6px">${cam.name}</div>
+          <div style="font-size:12px;color:#475569;margin-bottom:4px">📍 ${cam.location_name}</div>
+          <div style="font-size:11px;color:#94a3b8;font-family:monospace">
+            ${cam.latitude.toFixed(4)}°N, ${cam.longitude.toFixed(4)}°E
+          </div>
+          <div style="margin-top:6px;padding:3px 6px;border-radius:4px;display:inline-block;
+            font-size:10px;font-weight:700;
+            background:${cam.is_active ? '#dcfce7' : '#f1f5f9'};
+            color:${cam.is_active ? '#16a34a' : '#64748b'}">
+            ${cam.is_active ? '● ONLINE' : '○ OFFLINE'}
+          </div>
+          ${cam.vendor ? `<span style="margin-left:6px;font-size:10px;color:#3b82f6;font-weight:700">${cam.vendor}</span>` : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      marker.addTo(leafletMapRef.current);
+      markersRef.current.push(marker);
+    });
+  }, [cameras, alerts, mapReady, routeData]);
+
+  // Route polyline + checkpoint markers
+  useEffect(() => {
+    if (!leafletMapRef.current || !mapReady || !L) return;
+
+    // Remove old route
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+
+    if (!routeData || !routeData.checkpoints || routeData.checkpoints.length < 2) return;
+
+    const checkpoints = routeData.checkpoints.filter((cp: any) => cp.latitude && cp.longitude);
+    if (checkpoints.length < 2) return;
+
+    const coords = checkpoints.map((cp: any) => [cp.latitude, cp.longitude]);
+
+    // Draw animated polyline
+    const polyline = L.polyline(coords, {
+      color: '#0891b2',
+      weight: 4,
+      opacity: 0.85,
+      dashArray: '8 6',
+    }).addTo(leafletMapRef.current);
+
+    // Add numbered checkpoint markers
+    checkpoints.forEach((cp: any, i: number) => {
+      const html = `
+        <div style="
+          width:28px;height:28px;border-radius:50%;
+          background:#0891b2;border:3px solid #fff;
+          box-shadow:0 2px 8px rgba(0,0,0,0.35);
+          display:flex;align-items:center;justify-content:center;
+          font-size:11px;font-weight:800;color:#fff;
+          font-family:monospace;
+        ">${i + 1}</div>
+      `;
+      const icon = L.divIcon({ html, className: '', iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16] });
+      const m = L.marker([cp.latitude, cp.longitude], { icon });
+
+      const pop = `
+        <div style="font-family:Inter,sans-serif;min-width:180px">
+          <div style="font-size:11px;color:#0891b2;font-weight:800;margin-bottom:4px">
+            Checkpoint #${i + 1} of ${checkpoints.length}
+          </div>
+          <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:4px">${cp.location_name || cp.camera_name}</div>
+          <div style="font-size:11px;color:#64748b">
+            🕒 ${new Date(cp.timestamp).toLocaleString('en-IN')}
+          </div>
+          <div style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:3px">
+            ${Number(cp.latitude).toFixed(4)}°N, ${Number(cp.longitude).toFixed(4)}°E
+          </div>
+          ${cp.confidence ? `<div style="font-size:10px;color:#16a34a;margin-top:4px;font-weight:700">ANPR Confidence: ${(cp.confidence * 100).toFixed(1)}%</div>` : ''}
+        </div>
+      `;
+      m.bindPopup(pop);
+      m.addTo(leafletMapRef.current);
+      markersRef.current.push(m);
+    });
+
+    routeLayerRef.current = polyline;
+
+    // Fit map to route
+    try {
+      leafletMapRef.current.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    } catch {}
+  }, [routeData, mapReady]);
+
+  // When selectedPlate changes from outside
+  useEffect(() => {
+    if (selectedPlate && selectedPlate !== searchPlate) {
       setSearchPlate(selectedPlate);
       fetchRoute(selectedPlate);
     }
   }, [selectedPlate]);
 
-  const fetchRoute = async (plate: string) => {
-    if (!plate) return;
+  const fetchRoute = useCallback(async (plate: string) => {
+    if (!plate.trim()) return;
     setLoadingRoute(true);
+    setRouteError('');
     try {
-      const data = await getVehicleRoute(plate);
+      const data = await getVehicleRoute(plate.trim());
       setRouteData(data);
-    } catch (err) {
-      console.error("Error fetching route:", err);
+      if (onSelectPlate) onSelectPlate(plate.trim());
+      if (!data?.checkpoints?.length || data.checkpoints_count === 0) {
+        setRouteError(`No sightings found for plate "${plate}". Try simulating a route first.`);
+      }
+    } catch (err: any) {
+      setRouteError('Failed to fetch route data. Check backend connection.');
     } finally {
       setLoadingRoute(false);
+    }
+  }, [onSelectPlate]);
+
+  const clearRoute = () => {
+    setRouteData(null);
+    setRouteError('');
+    if (routeLayerRef.current && leafletMapRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
     }
   };
 
   return (
-    <div style={{
-      backgroundColor: 'var(--bg-card)',
-      border: '1px solid var(--border-color)',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0'
-    }}>
-      {/* Map Control Bar */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Map Controls */}
       <div style={{
-        padding: '1rem 1.5rem',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: 'rgba(17, 24, 39, 0.7)',
-        flexWrap: 'wrap',
-        gap: '1rem'
+        background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem',
+        display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between',
+        alignItems: 'center', gap: '0.75rem',
+        boxShadow: 'var(--shadow-sm)'
       }}>
         <div>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>🗺️ Gujarat Police GIS Multi-Camera Vehicle Tracker</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Real-time visual route reconstruction across state highway camera nodes
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            🗺️ Gujarat Police GIS Vehicle Tracker
+          </h3>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+            Real-time cross-camera route reconstruction · {cameras.length} cameras · {alerts.length} active alerts
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="text"
-            placeholder="Search Plate (e.g. GJ01AB1234)"
+            placeholder="Enter plate (e.g. GJ01AB1234)"
             value={searchPlate}
-            onChange={(e) => setSearchPlate(e.target.value)}
+            onChange={e => setSearchPlate(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === 'Enter' && fetchRoute(searchPlate)}
             style={{
-              padding: '0.5rem 0.8rem',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              color: '#38bdf8',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              fontSize: '0.85rem'
+              padding: '0.5rem 0.875rem',
+              background: 'var(--bg-primary)', border: '1.5px solid var(--border-color)',
+              borderRadius: '8px', color: 'var(--text-primary)',
+              fontFamily: 'var(--font-mono)', fontWeight: 700,
+              fontSize: '0.875rem', width: '200px', outline: 'none'
             }}
           />
           <button
             onClick={() => fetchRoute(searchPlate)}
+            disabled={loadingRoute}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: '#0284c7',
-              border: 'none',
-              color: '#fff',
-              fontWeight: 600,
-              borderRadius: '6px',
-              fontSize: '0.85rem',
-              cursor: 'pointer'
+              background: 'var(--accent-blue)', color: '#fff',
+              border: 'none', borderRadius: '8px',
+              fontWeight: 700, fontSize: '0.85rem', cursor: loadingRoute ? 'wait' : 'pointer'
             }}
           >
-            {loadingRoute ? 'Tracing...' : 'Trace Route'}
+            {loadingRoute ? '⏳ Tracing…' : '🔍 Trace Route'}
           </button>
+          {routeData && (
+            <button
+              onClick={clearRoute}
+              style={{
+                padding: '0.5rem 0.8rem',
+                background: 'var(--bg-primary)', border: '1.5px solid var(--border-color)',
+                borderRadius: '8px', color: 'var(--text-secondary)',
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              ✕ Clear
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Visual GIS Canvas & Gujarat Nodes Simulation */}
+      {routeError && (
+        <div style={{
+          background: '#fff7ed', border: '1px solid rgba(217,119,6,0.3)',
+          borderRadius: '8px', padding: '0.75rem 1rem',
+          fontSize: '0.875rem', color: '#92400e', fontWeight: 500
+        }}>
+          ⚠️ {routeError}
+        </div>
+      )}
+
+      {/* Map Legend */}
       <div style={{
-        minHeight: '520px',
-        backgroundColor: '#070c18',
-        position: 'relative',
-        padding: '1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 80%)'
+        display: 'flex', gap: '1.25rem', flexWrap: 'wrap',
+        padding: '0.6rem 1rem',
+        background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+        borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600
       }}>
-        {/* Gujarat Geo Grid Visualizer Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: '#10b981',
-              boxShadow: '0 0 8px #10b981'
-            }} />
-            <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              GUJARAT STATE CCTV GIS RADAR // SECTOR 01-08 // LAT 20.1-24.7°N, LON 68.1-74.4°E
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-green)' }}>
-              ● Online Feeds ({cameras.length})
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--alert-red)' }}>
-              ▲ Intercept Alerts ({alerts.length})
-            </span>
-          </div>
-        </div>
+        <span style={{ color: '#1d4ed8' }}>● Camera Node ({cameras.length})</span>
+        <span style={{ color: '#dc2626' }}>● Active Alert ({alerts.length})</span>
+        <span style={{ color: '#0891b2' }}>● Route Checkpoint ({routeData?.checkpoints_count || 0})</span>
+        {routeData?.plate_number && (
+          <span style={{ color: '#7c3aed', fontFamily: 'var(--font-mono)' }}>
+            🎯 Tracking: {routeData.plate_number} ({routeData.checkpoints_count} sightings)
+          </span>
+        )}
+      </div>
 
-        {/* Dynamic Trajectory SVG Map Canvas */}
-        <div style={{
-          position: 'relative',
-          height: '240px',
-          backgroundColor: 'rgba(11, 19, 36, 0.85)',
-          border: '1px solid rgba(56, 189, 248, 0.2)',
-          borderRadius: '10px',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '1rem'
-        }}>
-          {/* Subtle Grid Lines */}
+      {/* Leaflet Map */}
+      <div className="map-wrapper">
+        <div
+          ref={mapRef}
+          style={{ height: '500px', width: '100%', background: '#e8edf2' }}
+        />
+        {!mapReady && (
           <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'linear-gradient(rgba(30, 41, 59, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 41, 59, 0.3) 1px, transparent 1px)',
-            backgroundSize: '30px 30px',
-            opacity: 0.7
-          }} />
-
-          {/* SVG Map Canvas with Animated Polylines */}
-          <svg style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
-            <defs>
-              <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
-                <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
-              </linearGradient>
-            </defs>
-
-            {/* Connecting Polylines for Checkpoints */}
-            {routeData?.checkpoints?.length > 1 && (
-              <polyline
-                points={routeData.checkpoints.map((cp: any, i: number) => {
-                  const stepX = 100 + (i * ((800 - 200) / (routeData.checkpoints.length - 1 || 1)));
-                  const stepY = 120 + ((i % 2 === 0 ? -40 : 40));
-                  return `${stepX},${stepY}`;
-                }).join(' ')}
-                fill="none"
-                stroke="url(#routeGradient)"
-                strokeWidth="4"
-                strokeDasharray="6 4"
-                strokeLinecap="round"
-              />
-            )}
-
-            {/* Render Nodes on Map */}
-            {cameras.map((cam, idx) => {
-              const isCheckpoint = routeData?.checkpoints?.some((cp: any) => cp.camera_id === cam.id);
-              const hasAlert = alerts.some((a) => a.camera_id === cam.id);
-              const nodeX = 100 + (idx * 160);
-              const nodeY = 120 + (idx % 2 === 0 ? -40 : 40);
-
-              return (
-                <g key={cam.id} transform={`translate(${nodeX}, ${nodeY})`}>
-                  {/* Pulse circle if checkpoint */}
-                  {isCheckpoint && (
-                    <circle r="20" fill="rgba(6, 182, 212, 0.25)">
-                      <animate attributeName="r" values="12;24;12" dur="2s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                  )}
-                  <circle
-                    r="9"
-                    fill={isCheckpoint ? '#06b6d4' : hasAlert ? '#ef4444' : '#3b82f6'}
-                    stroke="#fff"
-                    strokeWidth="2"
-                  />
-                  <text
-                    y="-15"
-                    textAnchor="middle"
-                    fill={isCheckpoint ? '#67e8f9' : '#cbd5e1'}
-                    fontSize="11"
-                    fontFamily="var(--font-mono)"
-                    fontWeight="700"
-                  >
-                    {cam.name.split(' ')[0]}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-
-          {(!routeData || routeData.checkpoints_count === 0) && (
-            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <span style={{ fontSize: '1.4rem' }}>🛰️</span>
-              <p style={{ marginTop: '0.3rem' }}>Search any plate above or click "Simulate Route" to plot live movement trajectory</p>
-            </div>
-          )}
-        </div>
-
-        {/* Nodes Representation on Gujarat Map */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-          margin: '0.5rem 0'
-        }}>
-          {cameras.map((cam) => {
-            const hasAlert = alerts.some((a) => a.camera_id === cam.id);
-            const isCheckpoint = routeData?.checkpoints?.some((cp: any) => cp.camera_id === cam.id);
-
-            return (
-              <div
-                key={cam.id}
-                style={{
-                  backgroundColor: isCheckpoint ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-card)',
-                  border: isCheckpoint
-                    ? '2px solid #06b6d4'
-                    : hasAlert
-                    ? '2px solid var(--alert-red)'
-                    : '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '1rem',
-                  position: 'relative',
-                  boxShadow: isCheckpoint ? '0 0 15px rgba(6, 182, 212, 0.3)' : 'none'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    backgroundColor: isCheckpoint ? '#06b6d4' : 'rgba(59, 130, 246, 0.2)',
-                    color: isCheckpoint ? '#000' : '#60a5fa',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontWeight: 700
-                  }}>
-                    NODE #{cam.id}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                    {cam.latitude.toFixed(2)}°N, {cam.longitude.toFixed(2)}°E
-                  </span>
-                </div>
-
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cam.name}</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                  📍 {cam.location_name}
-                </p>
-
-                {isCheckpoint && (
-                  <div style={{
-                    marginTop: '0.75rem',
-                    padding: '0.4rem',
-                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    color: '#67e8f9',
-                    fontWeight: 600
-                  }}>
-                    🎯 Sighting Recorded on Route
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Route History Timeline if traced */}
-        {routeData && routeData.checkpoints_count > 0 && (
-          <div style={{
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(6, 182, 212, 0.4)',
-            borderRadius: '8px',
-            padding: '1rem',
-            marginTop: '1rem'
+            height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#f0f4f8', flexDirection: 'column', gap: '0.5rem'
           }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#38bdf8', marginBottom: '0.5rem' }}>
-              🚗 Chronological Trajectory: Plate {routeData.plate_number} ({routeData.checkpoints_count} Checkpoints Recorded)
-            </h4>
-            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', padding: '0.5rem 0' }}>
-              {routeData.checkpoints.map((cp: any, i: number) => (
-                <div
-                  key={i}
-                  style={{
-                    minWidth: '220px',
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '0.75rem'
-                  }}
-                >
-                  <div style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 700 }}>
-                    Checkpoint #{i + 1}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '0.25rem' }}>
-                    {cp.location_name}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                    🕒 {new Date(cp.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <span style={{ fontSize: '1.5rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>🌐</span>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading GIS Map…</p>
           </div>
         )}
       </div>
+
+      {/* Checkpoint Timeline */}
+      {routeData && routeData.checkpoints_count > 0 && (
+        <div style={{
+          background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-lg)', padding: '1.25rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>
+            🚗 Trajectory: <span style={{ fontFamily: 'var(--font-mono)', color: '#0891b2' }}>{routeData.plate_number}</span>
+            &nbsp;— {routeData.checkpoints_count} Checkpoints
+          </h4>
+          <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+            {routeData.checkpoints.map((cp: any, i: number) => (
+              <div key={i} style={{
+                minWidth: '200px',
+                background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+                borderRadius: '10px', padding: '0.875rem',
+                borderLeft: '3px solid #0891b2'
+              }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0891b2', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Checkpoint {i + 1}/{routeData.checkpoints_count}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                  {cp.location_name || cp.camera_name}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  🕒 {new Date(cp.timestamp).toLocaleString('en-IN')}
+                </div>
+                {cp.confidence && (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--status-green)', fontWeight: 700, marginTop: '0.25rem' }}>
+                    ANPR: {(cp.confidence * 100).toFixed(1)}%
+                  </div>
+                )}
+                {cp.is_simulated && (
+                  <span style={{ fontSize: '0.68rem', background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '0.25rem', display: 'inline-block' }}>
+                    SIMULATED
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
