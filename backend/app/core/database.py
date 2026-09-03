@@ -22,8 +22,9 @@ def create_db_engine():
             logger.info("Connected to primary PostgreSQL database.")
         return engine
     except Exception as e:
-        logger.warning(f"Failed to connect to PostgreSQL ({e}). Falling back to local SQLite database.")
-        fallback_url = "sqlite:///./sentinelgrid_local.db"
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        db_path = os.path.join(project_root, "sentinelgrid_local.db")
+        fallback_url = f"sqlite:///{db_path}"
         return create_engine(fallback_url, connect_args={"check_same_thread": False})
 
 engine = create_db_engine()
