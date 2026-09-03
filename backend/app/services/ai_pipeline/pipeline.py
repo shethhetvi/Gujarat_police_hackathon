@@ -93,13 +93,9 @@ class VideoAnalyticsPipeline:
         pts_ms: Optional[float] = None
     ) -> List[Dict[str, Any]]:
         """
-<<<<<<< HEAD
         Process single video frame through complete AI pipeline,
         persisting detections with PTS speed, color, body type, and evidence hashes.
-=======
-        Process single video frame against watchlist and persist detection audit logs.
         Adheres to Sentinel Sandbox PTS timing rules for speed and dwell calculations.
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
         """
         results = []
         matching_engine = MatchingEngine(db)
@@ -109,27 +105,18 @@ class VideoAnalyticsPipeline:
         if not detections:
             return results
 
-<<<<<<< HEAD
-        # 2. Tracking (ByteTrack Intra-Camera Re-ID)
-        tracked_objects = self.tracker.update(detections)
-=======
         # 2. Tracking with Monotonic PTS (Sentinel Sandbox Specification)
         tracked_objects = self.tracker.update(detections, pts_ms=pts_ms)
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
 
         # 3. Process each tracked vehicle
         for obj in tracked_objects:
             bbox = obj["bbox"]
             track_id = obj.get("tracking_id", 0)
-<<<<<<< HEAD
             color = obj.get("color", "White")
             body_type = obj.get("body_type", "SUV")
-=======
             dwell_ms = obj.get("dwell_ms", 0.0)
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
             x1, y1, x2, y2 = bbox
 
-<<<<<<< HEAD
             # 4. Monotonic PTS Speed Estimation
             is_highway = "highway" in (camera.location_name or "").lower() or "sg" in (camera.name or "").lower()
             speed_kmh, is_overspeeding, pts = self.speed_detector.update_and_calculate_speed(
@@ -145,11 +132,7 @@ class VideoAnalyticsPipeline:
 
             # 6. Extract Plate with Indian ANPR OCR & Phonetic Rectification
             target_crop = plate_crop if plate_crop is not None and plate_crop.size > 0 else vehicle_crop
-            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(target_crop)
-=======
-            # 4. Extract Plate
-            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(crop, allow_fallback=fallback_on_empty)
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
+            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(target_crop, allow_fallback=fallback_on_empty)
             is_sim_event = obj.get("is_simulated", False) or is_simulated
 
             if plate_text:

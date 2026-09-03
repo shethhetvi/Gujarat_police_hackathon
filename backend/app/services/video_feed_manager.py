@@ -149,18 +149,26 @@ class VideoFeedManager:
             cv2.line(frame, (x2, y2), (x2 - c_len, y2), (56, 189, 248), 3)
             cv2.line(frame, (x2, y2), (x2 - c_len, y2), (56, 189, 248), 3)
 
-<<<<<<< HEAD
-            # OCR Plate simulation / extraction
-            plate = plate_candidates[(camera_id + idx + (frame_idx // 90)) % len(plate_candidates)]
-            body_type = det.get("body_type") or ("SUV" if "01" in plate else "Sedan" if "05" in plate else "Hatchback")
+            # Crop vehicle ROI and perform real OCR / simulation fallback
+            h, w = frame.shape[:2]
+            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+            plate_text = None
+            if crop is not None and crop.size > 0:
+                plate_text, _, _ = self.ocr.extract_plate(crop, allow_fallback=False)
+
+            if not plate_text:
+                plate_candidates = ["GJ01AB1234", "GJ05CD5678", "GJ27EF9012", "GJ03GH3456", "GJ06JK7890", "GJ18LM2345"]
+                plate_text = plate_candidates[(camera_id + idx + (frame_idx // 90)) % len(plate_candidates)]
+
+            body_type = det.get("body_type") or ("SUV" if "01" in plate_text else "Sedan" if "05" in plate_text else "Hatchback")
             color_attr = det.get("color") or ("White" if idx % 2 == 0 else "Silver")
             speed_val = 52 + ((camera_id * 7 + idx * 11) % 35)
 
-            is_suspect = (plate == "GJ01AB1234" or plate == "GJ05CD5678")
+            is_suspect = (plate_text == "GJ01AB1234" or plate_text == "GJ05CD5678")
             badge_color = (0, 34, 230) if is_suspect else color
 
             # Header Label with Vehicle Attributes & Speed
-            label_text = f"{color_attr.upper()} {body_type.upper()} | {speed_val} km/h | ANPR: {plate}"
+            label_text = f"{color_attr.upper()} {body_type.upper()} | {speed_val} km/h | ANPR: {plate_text}"
             if is_suspect:
                 label_text = f"HOTLIST ALERT! | {label_text}"
 
@@ -172,27 +180,6 @@ class VideoFeedManager:
             cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), badge_color, 1)
             cv2.putText(frame, label_text, (x1 + 6, label_y2 - 4),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 255, 255), 1, cv2.LINE_AA)
-=======
-            # Crop vehicle ROI and perform real OCR
-            h, w = frame.shape[:2]
-            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
-            plate_text = None
-            if crop is not None and crop.size > 0:
-                plate_text, _, _ = self.ocr.extract_plate(crop)
-
-            if plate_text:
-                label_text = f"{cls_name} {conf*100:.1f}% | ANPR: {plate_text}"
-            else:
-                label_text = f"{cls_name} {conf*100:.1f}% | TRK #{100 + idx + camera_id}"
-
-            (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.40, 1)
-            label_y1 = max(34, y1 - th - 8)
-            label_y2 = label_y1 + th + 8
-            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 10, label_y2), (20, 24, 33), -1)
-            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 10, label_y2), color, 1)
-            cv2.putText(frame, label_text, (x1 + 5, label_y2 - 4),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1, cv2.LINE_AA)
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
 
     def generate_feed(
         self,
