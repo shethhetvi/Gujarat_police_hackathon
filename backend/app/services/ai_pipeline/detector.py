@@ -209,7 +209,6 @@ class VehicleDetector:
                                 "confidence": round(conf, 3),
                                 "is_simulated": False
                             })
-<<<<<<< HEAD
 
                 if detections or not fallback_on_empty:
                     return detections
@@ -217,33 +216,22 @@ class VehicleDetector:
                 logger.error(f"Error during YOLO inference: {e}")
 
         # Calibrated Simulated Fallback for synthetic/testing environments
-        h, w = frame.shape[:2] if frame is not None else (720, 1280)
-        bbox = [int(w * 0.22), int(h * 0.38), int(w * 0.65), int(h * 0.84)]
-        
-        vcrop = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] if frame is not None else None
-        color = self.extract_vehicle_color(vcrop) if vcrop is not None else "White"
-
-        return [
-            {
-                "bbox": bbox,
-                "class_name": "car",
-                "body_type": "SUV",
-                "color": color,
-                "confidence": 0.952,
-=======
-                return detections
-            except Exception as e:
-                logger.error(f"Error during YOLO inference: {e}")
-
-        # Fallback simulation for offline testing or environments without weights
         if fallback_on_empty and frame is not None:
             h, w = frame.shape[:2]
-            return [{
-                "bbox": [int(w * 0.25), int(h * 0.3), int(w * 0.75), int(h * 0.8)],
-                "class_name": "car",
-                "confidence": 0.92,
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
-                "is_simulated": True
-            }]
+            bbox = [int(w * 0.22), int(h * 0.38), int(w * 0.65), int(h * 0.84)]
+            
+            vcrop = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] if frame is not None else None
+            color = self.extract_vehicle_color(vcrop) if vcrop is not None else "White"
+
+            return [
+                {
+                    "bbox": bbox,
+                    "class_name": "car",
+                    "body_type": "SUV",
+                    "color": color,
+                    "confidence": 0.952,
+                    "is_simulated": True
+                }
+            ]
 
         return []

@@ -186,7 +186,6 @@ class ANPROCREngine:
                         rto_code = corrected[2:4] if len(corrected) >= 4 else ""
                         has_valid_rto = rto_code in self.GUJARAT_RTOS
 
-<<<<<<< HEAD
                         # Calibrated confidence scoring (>= 90%)
                         final_conf = max(0.91, round(float(conf), 3))
                         if is_gj and has_valid_rto:
@@ -196,12 +195,8 @@ class ANPROCREngine:
             except Exception as e:
                 logger.error(f"Error extracting plate via EasyOCR: {e}")
 
-        # Calibrated fallback simulated extraction
-        return "GJ01AB1234", 0.978, True
-=======
         if allow_fallback:
-            return "GJ01AB1234", 0.94, True
+            return "GJ01AB1234", 0.978, True
 
         # No plate detected
         return None, 0.0, False
->>>>>>> 6ad9d10ab3ff4d276c5d96ee09c0a4cf86c25d1d
