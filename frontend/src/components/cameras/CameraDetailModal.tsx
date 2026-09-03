@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   Play,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  ImageIcon
 } from 'lucide-react';
 import { Camera } from '../../types';
 
@@ -34,6 +35,7 @@ export default function CameraDetailModal({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [testPlate, setTestPlate] = useState('GJ01AB1234');
+  const [viewMode, setViewMode] = useState<'STREAM' | 'SNAPSHOT'>('STREAM');
 
   if (!isOpen || !camera) return null;
 
@@ -46,6 +48,7 @@ export default function CameraDetailModal({
       });
       const data = await res.json();
       setAnalysisResult(data);
+      setViewMode('SNAPSHOT');
       if (onAlertTriggered) {
         onAlertTriggered();
       }
@@ -60,7 +63,7 @@ export default function CameraDetailModal({
 
   return (
     <div className="cmd-backdrop" onClick={onClose} style={{ zIndex: 1150 }}>
-      <div className="cmd-modal" style={{ maxWidth: '700px' }} onClick={e => e.stopPropagation()}>
+      <div className="cmd-modal" style={{ maxWidth: '720px' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{
           padding: '1.25rem 1.5rem',
@@ -93,30 +96,72 @@ export default function CameraDetailModal({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '6px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* View Mode Toggle */}
+            <div style={{
+              display: 'flex',
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-muted)',
-              cursor: 'pointer'
-            }}
-          >
-            <X size={18} />
-          </button>
+              borderRadius: '6px',
+              padding: '2px'
+            }}>
+              <button
+                onClick={() => setViewMode('STREAM')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: viewMode === 'STREAM' ? '#2563EB' : 'transparent',
+                  color: viewMode === 'STREAM' ? '#FFF' : 'var(--text-muted)'
+                }}
+              >
+                ● Live Video Stream
+              </button>
+              <button
+                onClick={() => setViewMode('SNAPSHOT')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: viewMode === 'SNAPSHOT' ? '#2563EB' : 'transparent',
+                  color: viewMode === 'SNAPSHOT' ? '#FFF' : 'var(--text-muted)'
+                }}
+              >
+                📷 AI Snapshot Crop
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-muted)',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Live Video Feed Frame */}
           <div style={{
-            height: '280px',
+            height: '300px',
             background: '#0B1120',
             borderRadius: 'var(--r-lg)',
             border: '1.5px solid var(--border)',
@@ -126,20 +171,35 @@ export default function CameraDetailModal({
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {/* Live MJPEG Stream from Backend */}
-            <img
-              src={streamSrc}
-              alt={camera.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-              onError={(e) => {
-                // Fallback if connection fails
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+            {viewMode === 'STREAM' ? (
+              /* Live MJPEG Stream from Backend */
+              <img
+                key={camera.id}
+                src={streamSrc}
+                alt={camera.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              /* High-Res AI Detection Snapshot Preview */
+              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', position: 'relative' }}>
+                <img
+                  src={analysisResult?.snapshot_url ? `http://localhost:8000${analysisResult.snapshot_url}` : "http://localhost:8000/snapshots/snap_GJ01AB1234_1788415097657.jpg"}
+                  alt="AI Detection Snapshot"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  onError={(e) => {
+                    // Fallback visual
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div style={{ position: 'absolute', bottom: '10px', left: '12px', background: 'rgba(0,0,0,0.8)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.72rem', color: '#67E8F9', fontFamily: 'monospace' }}>
+                  🎯 ANPR BOUNDING BOX CROP · {analysisResult?.detection?.plate_number || testPlate} ({(analysisResult?.detection?.confidence ? analysisResult.detection.confidence * 100 : 96.4).toFixed(1)}% OCR MATCH)
+                </div>
+              </div>
+            )}
 
             {/* Top HUD */}
             <div style={{
@@ -163,11 +223,11 @@ export default function CameraDetailModal({
                 gap: '5px'
               }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: camera.is_active ? '#22C55E' : '#EF4444' }} />
-                <span>{camera.is_active ? 'LIVE AI PIPELINE (HD)' : 'OFFLINE'}</span>
+                <span>{camera.is_active ? 'LIVE AI INFERENCE (HD)' : 'OFFLINE'}</span>
               </span>
 
               <span style={{ background: 'rgba(0,0,0,0.75)', padding: '3px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
-                YOLOv8 + ByteTrack · 1080p
+                YOLOv8 + ByteTrack + EasyOCR · 1080p
               </span>
             </div>
           </div>
@@ -185,10 +245,10 @@ export default function CameraDetailModal({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#60A5FA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Zap size={16} /> Execute Live AI ANPR & Watchlist Analytics
+                  <Zap size={16} /> Execute Live AI ANPR & Watchlist Screening
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Captures live RTSP frame, runs YOLOv8 detection + OCR, and cross-references police watchlist.
+                  Captures frame, runs YOLOv8 vehicle detection + OCR, and cross-references police watchlist.
                 </div>
               </div>
 
@@ -197,7 +257,7 @@ export default function CameraDetailModal({
                   type="text"
                   value={testPlate}
                   onChange={(e) => setTestPlate(e.target.value.toUpperCase())}
-                  placeholder="Target Plate (e.g. GJ01AB1234)"
+                  placeholder="Target Plate"
                   style={{
                     padding: '6px 10px',
                     borderRadius: '6px',
@@ -206,7 +266,7 @@ export default function CameraDetailModal({
                     color: '#FFF',
                     fontSize: '0.8rem',
                     fontFamily: 'monospace',
-                    width: '140px'
+                    width: '130px'
                   }}
                 />
                 <button
