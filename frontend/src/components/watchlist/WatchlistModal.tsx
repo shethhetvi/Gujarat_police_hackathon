@@ -1,5 +1,7 @@
 'use client';
+
 import React, { useState } from 'react';
+import { Crosshair, X, Shield, AlertTriangle, Check, AlertCircle } from 'lucide-react';
 import { WatchlistCreate } from '../../types';
 
 interface WatchlistModalProps {
@@ -22,177 +24,338 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({ isOpen, onClose,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plateNumber.trim()) { setError('Plate number is required.'); return; }
-    const plateRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+    if (!plateNumber.trim()) {
+      setError('Target license plate number is required.');
+      return;
+    }
     const cleaned = plateNumber.trim().toUpperCase().replace(/[-\s]/g, '');
     setLoading(true);
     setError('');
     try {
       await onSubmit({
         plate_number: cleaned,
-        category, priority,
+        category,
+        priority,
         vehicle_make_model: makeModel,
         color,
         description,
         is_active: true
       });
       onClose();
-      // Reset
-      setPlateNumber(''); setCategory('stolen'); setPriority('HIGH');
-      setMakeModel(''); setColor(''); setDescription('');
+      setPlateNumber('');
+      setCategory('stolen');
+      setPriority('HIGH');
+      setMakeModel('');
+      setColor('');
+      setDescription('');
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Failed to add entry.';
-      setError(msg.includes('already exists') ? `Plate ${cleaned} is already in the watchlist.` : msg);
+      const msg = err?.response?.data?.detail || 'Failed to add target to watchlist.';
+      setError(msg.includes('already exists') ? `Plate ${cleaned} is already registered in active watchlist.` : msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '0.6rem 0.875rem',
-    background: 'var(--bg-primary)', border: '1.5px solid var(--border-color)',
-    borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.875rem',
-    outline: 'none', transition: 'border-color 0.15s ease'
-  };
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: '0.75rem', fontWeight: 600,
-    color: 'var(--text-secondary)', marginBottom: '0.35rem',
-    textTransform: 'uppercase', letterSpacing: '0.04em'
-  };
-
-  const PRIORITY_COLORS: Record<string, string> = {
-    CRITICAL: '#dc2626', HIGH: '#d97706', MEDIUM: '#ca8a04', LOW: '#16a34a'
-  };
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: '500px', padding: '1.75rem' }} onClick={e => e.stopPropagation()}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(10, 15, 29, 0.75)',
+      backdropFilter: 'blur(10px)',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1.5rem',
+      animation: 'fadeIn 0.18s ease-out'
+    }} onClick={onClose}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          background: 'var(--bg-card, #FFFFFF)',
+          borderRadius: '24px',
+          border: '1.5px solid var(--border, #E5E7EB)',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{
+          padding: '1.25rem 1.5rem',
+          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(245, 158, 11, 0.05))',
+          borderBottom: '1px solid var(--border, #E5E7EB)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: '#fef2f2',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem'
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
             }}>
-              🎯
+              <Crosshair size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Add Suspect Target</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Register plate for real-time ANPR screening</p>
+              <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-heading, #111827)' }}>
+                Add Suspect Watchlist Target
+              </div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted, #6B7280)' }}>
+                Register vehicle plate for statewide real-time ANPR intercept
+              </div>
             </div>
           </div>
+
           <button
             onClick={onClose}
             style={{
-              background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-              borderRadius: '8px', width: '32px', height: '32px',
-              cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem'
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              border: '1px solid var(--border, #E5E7EB)',
+              background: 'var(--bg-subtle, #F9FAFB)',
+              color: 'var(--text-dim, #6B7280)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
             }}
-          >✕</button>
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        {error && <div className="error-banner" style={{ marginBottom: '1rem' }}>{error}</div>}
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+          {error && (
+            <div style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#DC2626',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Plate */}
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>License Plate Number *</label>
+          {/* License Plate Input */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Target License Plate Number *
+            </label>
             <input
-              type="text" required
+              type="text"
+              required
+              placeholder="e.g. GJ01AB1234"
               value={plateNumber}
               onChange={e => setPlateNumber(e.target.value.toUpperCase())}
-              placeholder="GJ01AB1234"
-              style={{ ...inputStyle, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.08em' }}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                border: '2px solid var(--border, #D1D5DB)',
+                background: 'var(--bg-card, #FFFFFF)',
+                color: 'var(--text-heading, #111827)',
+                fontFamily: 'monospace',
+                fontSize: '1.1rem',
+                fontWeight: 900,
+                letterSpacing: '0.08em',
+                outline: 'none'
+              }}
             />
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Standard Indian format: GJ01AB1234
-            </p>
           </div>
 
-          {/* Category & Priority */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          {/* Category & Priority Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={labelStyle}>Category</label>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Case Category
+              </label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value as any)}
-                style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid var(--border, #D1D5DB)',
+                  background: 'var(--bg-subtle, #F9FAFB)',
+                  color: 'var(--text-heading, #111827)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  outline: 'none'
+                }}
               >
-                <option value="stolen">🚗 Stolen Vehicle</option>
-                <option value="wanted">⚠️ Wanted Suspect</option>
+                <option value="stolen">🚨 Stolen Vehicle</option>
+                <option value="wanted">⚠️ Wanted / Fugitive</option>
+                <option value="blacklisted">🚫 Blacklisted Intercept</option>
                 <option value="missing">🔍 Missing Person</option>
-                <option value="blacklisted">🚫 Blacklisted</option>
               </select>
             </div>
+
             <div>
-              <label style={labelStyle}>Priority Level</label>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Intercept Priority
+              </label>
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value as any)}
                 style={{
-                  ...inputStyle, appearance: 'none', cursor: 'pointer',
-                  color: PRIORITY_COLORS[priority] || 'var(--text-primary)',
-                  fontWeight: 700
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid var(--border, #D1D5DB)',
+                  background: 'var(--bg-subtle, #F9FAFB)',
+                  color: 'var(--text-heading, #111827)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  outline: 'none'
                 }}
               >
-                <option value="CRITICAL">🔴 Critical</option>
-                <option value="HIGH">🟠 High</option>
-                <option value="MEDIUM">🟡 Medium</option>
-                <option value="LOW">🟢 Low</option>
+                <option value="CRITICAL">🔴 CRITICAL PRIORITY</option>
+                <option value="HIGH">🟠 HIGH PRIORITY</option>
+                <option value="MEDIUM">🟡 MEDIUM PRIORITY</option>
+                <option value="LOW">🟢 LOW PRIORITY</option>
               </select>
             </div>
           </div>
 
-          {/* Make/Model & Color */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          {/* Vehicle Make/Model & Color */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={labelStyle}>Vehicle Make / Model</label>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Vehicle Make / Model
+              </label>
               <input
                 type="text"
+                placeholder="e.g. Toyota Fortuner"
                 value={makeModel}
                 onChange={e => setMakeModel(e.target.value)}
-                placeholder="White Hyundai Creta"
-                style={inputStyle}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid var(--border, #D1D5DB)',
+                  background: 'var(--bg-card, #FFFFFF)',
+                  color: 'var(--text-heading, #111827)',
+                  fontSize: '0.86rem',
+                  fontWeight: 600,
+                  outline: 'none'
+                }}
               />
             </div>
+
             <div>
-              <label style={labelStyle}>Color</label>
+              <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Color
+              </label>
               <input
                 type="text"
+                placeholder="e.g. Pearl White"
                 value={color}
                 onChange={e => setColor(e.target.value)}
-                placeholder="White"
-                style={inputStyle}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid var(--border, #D1D5DB)',
+                  background: 'var(--bg-card, #FFFFFF)',
+                  color: 'var(--text-heading, #111827)',
+                  fontSize: '0.86rem',
+                  fontWeight: 600,
+                  outline: 'none'
+                }}
               />
             </div>
           </div>
 
-          {/* Description */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={labelStyle}>Police Case / FIR Notes</label>
-            <textarea
-              rows={3}
+          {/* Description / FIR Note */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted, #4B5563)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Police Case / FIR Notes
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. FIR #4092/2026 Navrangpura PS - Suspect armed"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Reported stolen from Navrangpura PS, Ahmedabad. FIR #4092 dated 02-Sep-2026…"
-              style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5' }}
+              style={{
+                width: '100%',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '12px',
+                border: '1.5px solid var(--border, #D1D5DB)',
+                background: 'var(--bg-card, #FFFFFF)',
+                color: 'var(--text-heading, #111827)',
+                fontSize: '0.86rem',
+                fontWeight: 600,
+                outline: 'none'
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button type="button" onClick={onClose} className="btn btn-outline">Cancel</button>
+          {/* Footer Actions */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '0.75rem',
+            paddingTop: '0.75rem',
+            borderTop: '1px solid var(--border, #E5E7EB)'
+          }}>
             <button
-              type="submit" disabled={loading}
+              type="button"
+              onClick={onClose}
               style={{
-                padding: '0.6rem 1.25rem',
-                background: PRIORITY_COLORS[priority],
-                color: '#fff', border: 'none',
-                borderRadius: '8px', fontWeight: 700,
-                fontSize: '0.875rem', cursor: loading ? 'wait' : 'pointer'
+                padding: '0.65rem 1.25rem',
+                borderRadius: '12px',
+                border: '1.5px solid var(--border, #D1D5DB)',
+                background: 'var(--bg-subtle, #F9FAFB)',
+                color: 'var(--text-heading, #374151)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer'
               }}
             >
-              {loading ? '⏳ Adding…' : '🎯 Add to Watchlist'}
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '0.65rem 1.4rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                color: '#FFFFFF',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              <Crosshair size={16} />
+              <span>{loading ? 'Adding Target…' : 'Register Target to Watchlist'}</span>
             </button>
           </div>
         </form>

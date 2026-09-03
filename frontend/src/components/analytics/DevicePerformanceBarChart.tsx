@@ -26,11 +26,11 @@ export default function DevicePerformanceBarChart() {
 
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--bg-card)',
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       gap: '1rem'
@@ -38,10 +38,10 @@ export default function DevicePerformanceBarChart() {
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>
+          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-heading)' }}>
             Surveillance Device Performance
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
             Multi-node optical camera ingestion telemetry
           </div>
         </div>

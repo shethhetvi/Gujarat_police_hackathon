@@ -51,18 +51,18 @@ export default function SplineTrendChart({
 
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--bg-card)',
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       gap: '0.85rem'
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-heading)' }}>
           {title}
         </div>
 

@@ -12,11 +12,11 @@ export default function PatrolBatteryWidget({ onQuickDispatch }: PatrolBatteryWi
 
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--bg-card)',
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -24,11 +24,11 @@ export default function PatrolBatteryWidget({ onQuickDispatch }: PatrolBatteryWi
     }}>
       {/* Title */}
       <div>
-        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-heading)' }}>
           Patrol Fleet Readiness
         </div>
-        <div style={{ fontSize: '0.74rem', color: '#6B7280', marginTop: '4px', fontWeight: 600 }}>
-          State of Health : <span style={{ color: '#111827', fontWeight: 700 }}>90%</span>
+        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
+          State of Health : <span style={{ color: 'var(--text-heading)', fontWeight: 700 }}>90%</span>
         </div>
         <div style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 700, marginTop: '2px' }}>
           Warning Level : &lt; 30%

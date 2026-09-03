@@ -218,12 +218,13 @@ export default function CommandCenter() {
     setToasts(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  // Theme Setup
+  // Theme Setup & Real-Time Sync
   useEffect(() => {
     const saved = localStorage.getItem('sentinelgrid_theme') as 'light' | 'dark' | null;
     const initial = saved || 'light';
     setTheme(initial);
     document.documentElement.setAttribute('data-theme', initial);
+    document.documentElement.classList.toggle('dark', initial === 'dark');
   }, []);
 
   const toggleTheme = () => {
@@ -231,6 +232,7 @@ export default function CommandCenter() {
     setTheme(next);
     localStorage.setItem('sentinelgrid_theme', next);
     document.documentElement.setAttribute('data-theme', next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
     addToast({ type: 'info', title: `Switched to ${next.toUpperCase()} Mode` });
   };
 
@@ -511,10 +513,10 @@ export default function CommandCenter() {
           activeCamerasCount={summary.active_cameras}
           watchlistCount={summary.watchlist_count}
           theme={theme}
-          onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+          onToggleTheme={toggleTheme}
         />
 
-        <main className="content-viewport" style={{ background: '#F3F8F5', padding: '1.5rem 2rem' }}>
+        <main className="content-viewport" style={{ background: 'var(--bg-page)', padding: '1.5rem 2rem' }}>
           {/* ────────────────────────────────────────────────────────────────
               TAB 1: COMMAND CENTER (DASHBOARD - SOLAR SYNC STYLE)
           ──────────────────────────────────────────────────────────────── */}
@@ -524,27 +526,27 @@ export default function CommandCenter() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
                 {/* Card 1: Optical ANPR Efficiency */}
                 <div style={{
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   borderRadius: '20px',
                   padding: '1.25rem',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
                       Optical ANPR Efficiency
                     </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                       <span style={{ color: '#10B981' }}>● High</span>
                       <span style={{ color: '#F59E0B' }}>● Mod</span>
                       <span style={{ color: '#EF4444' }}>● Low</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
                       98.4%
                     </div>
                     <SpeedometerGauge value={98} color="#10B981" />
@@ -553,27 +555,27 @@ export default function CommandCenter() {
 
                 {/* Card 2: Active CCTV Grid */}
                 <div style={{
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   borderRadius: '20px',
                   padding: '1.25rem',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
                       Active CCTV Feeds
                     </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                       <span style={{ color: '#10B981' }}>● Online</span>
                       <span style={{ color: '#F59E0B' }}>● Polling</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
-                      {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: '#9CA3AF', fontWeight: 600 }}>/ {summary.total_cameras}</span>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                      {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ {summary.total_cameras}</span>
                     </div>
                     <SpeedometerGauge value={100} color="#F59E0B" />
                   </div>
@@ -581,26 +583,26 @@ export default function CommandCenter() {
 
                 {/* Card 3: Highway Traffic Volume */}
                 <div style={{
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   borderRadius: '20px',
                   padding: '1.25rem',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-heading)' }}>
                       Highway Traffic Volume
                     </span>
-                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: '#6B7280', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', gap: '4px', fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                       <span style={{ color: '#10B981' }}>● High</span>
                       <span style={{ color: '#F59E0B' }}>● Mod</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
                       {summary.total_detections.toLocaleString()}
                     </div>
                     <SpeedometerGauge value={75} color="#3B82F6" />
@@ -609,32 +611,32 @@ export default function CommandCenter() {
 
                 {/* Card 4: Weather Today & Jurisdiction Status */}
                 <div style={{
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   borderRadius: '20px',
                   padding: '1.25rem',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-card)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between'
                 }}>
-                  <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 700 }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
                     Weather today
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '0.2rem' }}>
-                    <span style={{ fontSize: '2.2rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.02em' }}>
+                    <span style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
                       31°C
                     </span>
                     <span style={{ fontSize: '1.4rem' }}>⛅</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.6rem' }}>
-                    <span style={{ fontSize: '0.74rem', color: '#4B5563', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                       Ahmedabad City Hub
                     </span>
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      <span style={{ padding: '2px 7px', background: '#F3F4F6', borderRadius: '6px', fontSize: '0.7rem', color: '#6B7280', cursor: 'pointer' }}>‹</span>
+                      <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>‹</span>
                       <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>6</span>
-                      <span style={{ padding: '2px 7px', background: '#F3F4F6', borderRadius: '6px', fontSize: '0.7rem', color: '#6B7280', cursor: 'pointer' }}>›</span>
+                      <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>›</span>
                     </div>
                   </div>
                 </div>

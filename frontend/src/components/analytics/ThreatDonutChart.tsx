@@ -17,11 +17,11 @@ export default function ThreatDonutChart() {
 
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--bg-card)',
       borderRadius: '20px',
       padding: '1.25rem 1.5rem',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--shadow-card)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -29,7 +29,7 @@ export default function ThreatDonutChart() {
     }}>
       {/* Header with Month/Year selectors */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-heading)' }}>
           Threat Contribution
         </div>
 

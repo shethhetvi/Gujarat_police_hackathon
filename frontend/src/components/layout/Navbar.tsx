@@ -103,57 +103,100 @@ export default function Navbar({
 
   return (
     <header className="app-header" style={{
-      height: '60px',
-      background: 'var(--bg-panel)',
-      borderBottom: '1px solid var(--border)',
+      height: '68px',
+      background: 'linear-gradient(90deg, #0A1628 0%, #0F233D 50%, #0A1628 100%)',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 1rem',
+      padding: '0 1.25rem',
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      boxShadow: 'var(--shadow-sm)'
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
     }}>
-      {/* ── Left: Dashboard Title & Subtitle (Solar Sync Style) ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      {/* ── Left: Official Gujarat Police Seal & Title (High Contrast) ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
         <div style={{
-          fontSize: '1.45rem',
-          fontWeight: 800,
-          color: '#111827',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1
+          width: '42px',
+          height: '42px',
+          borderRadius: '10px',
+          background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#FCD34D',
+          border: '1.5px solid #FCD34D',
+          boxShadow: '0 0 12px rgba(252, 211, 77, 0.35)'
         }}>
-          Dashboard
+          <Shield size={24} style={{ strokeWidth: 2.2 }} />
         </div>
-        <div style={{
-          fontSize: '0.78rem',
-          color: '#6B7280',
-          fontWeight: 500
-        }}>
-          View all information & live status about surveillance grid
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{
+              fontWeight: 900,
+              fontSize: '1.08rem',
+              color: '#FFFFFF',
+              letterSpacing: '0.02em',
+              lineHeight: 1.15
+            }}>
+              GUJARAT POLICE
+            </span>
+            <span style={{
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              padding: '2px 7px',
+              borderRadius: '4px',
+              background: '#10B981',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+            }}>
+              ICCC NETRAM
+            </span>
+          </div>
+          <div style={{
+            fontSize: '0.72rem',
+            color: '#94A3B8',
+            fontWeight: 500,
+            lineHeight: 1.2,
+            marginTop: '2px'
+          }}>
+            Integrated Command & Control Centre · Smart Surveillance Grid
+          </div>
         </div>
       </div>
 
-      {/* ── Center: Rounded Pill Search Bar with Circular Green Button (Solar Sync Style) ── */}
+      {/* ── Center: Search Capsule with Emerald Action Button ── */}
       <div style={{ flex: 1, maxWidth: '380px', margin: '0 1.5rem' }}>
         <div
           onClick={onOpenSearch}
           style={{
             display: 'flex',
             alignItems: 'center',
-            background: '#FFFFFF',
-            border: '1px solid #E5E7EB',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
             borderRadius: '9999px',
             padding: '4px 6px 4px 16px',
             cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+            boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)',
             transition: 'all 0.15s ease'
           }}
         >
-          <span style={{ flex: 1, fontSize: '0.84rem', color: '#9CA3AF' }}>
+          <span style={{ flex: 1, fontSize: '0.84rem', color: '#CBD5E1' }}>
             Search plate, camera, alert…
           </span>
+          <kbd style={{
+            background: 'rgba(255, 255, 255, 0.12)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '4px',
+            padding: '2px 5px',
+            fontSize: '0.65rem',
+            fontFamily: 'monospace',
+            color: '#94A3B8',
+            marginRight: '8px'
+          }}>
+            Ctrl+K
+          </kbd>
           <div style={{
             width: '32px',
             height: '32px',
@@ -163,29 +206,29 @@ export default function Navbar({
             alignItems: 'center',
             justifyContent: 'center',
             color: '#FFFFFF',
-            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
           }}>
             <Search size={15} />
           </div>
         </div>
       </div>
 
-      {/* ── Right: IST Clock, Status, Simulators, Theme, Officer, Notifications ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+      {/* ── Right: Multi-Contrast Controls Cluster ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
         {/* Live IST Clock */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.35rem',
-          padding: '0.35rem 0.6rem',
-          borderRadius: 'var(--r-md)',
-          background: 'var(--bg-subtle)',
-          border: '1px solid var(--border)',
-          fontSize: '0.74rem',
-          fontWeight: 600,
-          color: 'var(--text-muted)'
+          gap: '0.4rem',
+          padding: '0.4rem 0.75rem',
+          borderRadius: '10px',
+          background: 'rgba(255, 255, 255, 0.07)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          color: '#FCD34D'
         }}>
-          <Clock size={13} style={{ color: 'var(--primary)' }} />
+          <Clock size={14} style={{ color: '#FCD34D' }} />
           <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST Clock'}</span>
         </div>
 
@@ -194,22 +237,22 @@ export default function Navbar({
           display: 'flex',
           alignItems: 'center',
           gap: '0.4rem',
-          padding: '0.3rem 0.6rem',
-          borderRadius: 'var(--r-md)',
-          background: 'var(--bg-subtle)',
-          border: '1px solid var(--border)',
+          padding: '0.35rem 0.7rem',
+          borderRadius: '10px',
+          background: backendOnline ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+          border: `1px solid ${backendOnline ? 'rgba(34, 197, 94, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
           fontSize: '0.72rem',
-          fontWeight: 700
+          fontWeight: 800
         }}>
           <span style={{
-            width: '7px',
-            height: '7px',
+            width: '8px',
+            height: '8px',
             borderRadius: '50%',
-            background: backendOnline ? 'var(--success)' : 'var(--warning)',
-            boxShadow: backendOnline ? '0 0 6px rgba(22, 163, 74, 0.5)' : 'none'
+            background: backendOnline ? '#22C55E' : '#F59E0B',
+            boxShadow: backendOnline ? '0 0 8px #22C55E' : '0 0 8px #F59E0B'
           }} />
-          <span style={{ color: backendOnline ? 'var(--success)' : 'var(--warning)' }}>
-            {backendOnline ? 'ONLINE' : 'SIMULATOR'}
+          <span style={{ color: backendOnline ? '#4ADE80' : '#FCD34D' }}>
+            {backendOnline ? 'GRID ONLINE' : 'SIMULATOR'}
           </span>
         </div>
 
@@ -217,41 +260,78 @@ export default function Navbar({
         <button
           onClick={onSimulateAlert}
           disabled={isSimulating}
-          className="gov-btn gov-btn-danger gov-btn-xs"
+          style={{
+            padding: '0.4rem 0.75rem',
+            borderRadius: '10px',
+            border: 'none',
+            background: '#EF4444',
+            color: '#FFFFFF',
+            fontSize: '0.76rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
+          }}
           title="Simulate Real-time ANPR Alert"
         >
-          <Zap size={12} />
+          <Zap size={13} />
           <span>{isSimulating ? '…' : 'Sim Alert'}</span>
         </button>
 
         <button
           onClick={onSimulateRoute}
           disabled={isSimulating}
-          className="gov-btn gov-btn-primary gov-btn-xs"
+          style={{
+            padding: '0.4rem 0.75rem',
+            borderRadius: '10px',
+            border: 'none',
+            background: '#2563EB',
+            color: '#FFFFFF',
+            fontSize: '0.76rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)'
+          }}
           title="Simulate Highway Route"
         >
-          <Navigation size={12} />
+          <Navigation size={13} />
           <span>Sim Route</span>
         </button>
 
-        {/* Light / Dark Mode Toggle */}
+        {/* Light / Dark Mode Toggle Button */}
         <button
           onClick={onToggleTheme}
           style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--r-md)',
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border)',
+            padding: '0.35rem 0.65rem',
+            borderRadius: '10px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-muted)',
-            cursor: 'pointer'
+            gap: '5px',
+            color: '#FFFFFF',
+            cursor: 'pointer',
+            fontSize: '0.74rem',
+            fontWeight: 700
           }}
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
         >
-          {theme === 'light' ? <Moon size={15} /> : <Sun size={15} style={{ color: '#FCD34D' }} />}
+          {theme === 'light' ? (
+            <>
+              <Moon size={14} style={{ color: '#38BDF8' }} />
+              <span>Dark</span>
+            </>
+          ) : (
+            <>
+              <Sun size={14} style={{ color: '#FCD34D' }} />
+              <span>Light</span>
+            </>
+          )}
         </button>
 
         {/* Notification Bell */}

@@ -68,15 +68,15 @@ export default function Sidebar({
   return (
     <aside style={{
       width: '240px',
-      background: '#FFFFFF',
-      borderRight: '1px solid #E5E7EB',
+      background: 'var(--bg-card)',
+      borderRight: '1px solid var(--border)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
       padding: '1.5rem 1rem',
       flexShrink: 0,
       userSelect: 'none',
-      boxShadow: '2px 0 12px rgba(0, 0, 0, 0.02)'
+      boxShadow: 'var(--shadow-sm)'
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Brand Logo Header (Solar Sync Style) */}
@@ -248,7 +248,7 @@ export default function Sidebar({
             }} />
           </div>
 
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-heading)' }}>
             {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
           </span>
         </div>
