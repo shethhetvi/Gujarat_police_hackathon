@@ -15,8 +15,8 @@ logger = logging.getLogger("sentinelgrid.video_feed")
 
 SAMPLE_FEEDS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "simulation" / "sample_feeds"
 
-# Force RTSP over TCP as mandated by Gujarat Police Sentinel Grid Integrator Guide
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+# Force RTSP over TCP with 2s timeout as mandated by Gujarat Police Sentinel Grid Integrator Guide
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;2000000"
 
 class VideoFeedManager:
     """
@@ -57,7 +57,43 @@ class VideoFeedManager:
             
         return hls_url, rtsp_url, whep_url
 
-    def draw_hud(self, frame: np.ndarray, camera_name: str, location_name: str, fps: float, pts_ms: float, source_label: str):
+    def capture_camera_frame(self, camera_id: int, source_mode: str = "auto", target_rtsp: Optional[str] = None):
+        """
+        Captures a single raw frame with monotonic PTS timestamp for real-time analytics.
+        Falls back smoothly through Sample Video -> Sentinel Grid HLS -> RTSP.
+        """
+        hls_url, rtsp_url, _ = self.get_sentinel_grid_urls(camera_id)
+        stream_target = target_rtsp if target_rtsp else rtsp_url
+        cap = None
+
+        if source_mode == "sample_video" or source_mode == "auto":
+            video_path = self.get_sample_video_path(camera_id)
+            if video_path and os.path.exists(video_path):
+                cap = cv2.VideoCapture(video_path)
+            elif source_mode == "auto":
+                cap = cv2.VideoCapture(hls_url, cv2.CAP_FFMPEG)
+        elif source_mode == "grid_hls":
+            cap = cv2.VideoCapture(hls_url, cv2.CAP_FFMPEG)
+        elif source_mode == "webcam":
+            cap = cv2.VideoCapture(0)
+        else:
+            # Explicit RTSP
+            cap = cv2.VideoCapture(stream_target, cv2.CAP_FFMPEG)
+            if not cap.isOpened():
+                cap = cv2.VideoCapture(hls_url, cv2.CAP_FFMPEG)
+
+        frame = None
+        pts_ms = 0.0
+        if cap and cap.isOpened():
+            ret, raw = cap.read()
+            if ret and raw is not None:
+                frame = raw
+                pts_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+            cap.release()
+
+        return frame, pts_ms
+
+    def draw_hud(self, frame: np.ndarray, camera_name: str, location_name: str, fps: float, pts_ms: float, source_label: str, is_paused: bool = False):
         h, w = frame.shape[:2]
         now_str = time.strftime("%d/%m/%Y  %H:%M:%S IST")
 
@@ -67,9 +103,13 @@ class VideoFeedManager:
         cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
 
         # Status Dot & Title
-        cv2.circle(frame, (18, 17), 5, (34, 197, 94), -1)
-        cv2.putText(frame, f"LIVE REC  |  {camera_name} ({source_label})", (32, 22),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.46, (56, 189, 248), 1, cv2.LINE_AA)
+        dot_color = (234, 179, 8) if is_paused else (34, 197, 94)
+        status_title = f"MASTER SYNC [PAUSED]  |  {camera_name}" if is_paused else f"LIVE REC  |  {camera_name} ({source_label})"
+        title_color = (250, 204, 21) if is_paused else (56, 189, 248)
+        
+        cv2.circle(frame, (18, 17), 5, dot_color, -1)
+        cv2.putText(frame, status_title, (32, 22),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.46, title_color, 1, cv2.LINE_AA)
         
         # FPS, PTS & Time
         pts_text = f"PTS: {int(pts_ms)}ms | {fps:.1f} FPS · {now_str}" if pts_ms > 0 else f"{fps:.1f} FPS · {now_str}"
@@ -81,7 +121,8 @@ class VideoFeedManager:
         cv2.rectangle(overlay2, (0, h - 28), (w, h), (10, 15, 24), -1)
         cv2.addWeighted(overlay2, 0.75, frame, 0.25, 0, frame)
 
-        cv2.putText(frame, f"LOC: {location_name}  |  YOLOv8 + ByteTrack + EasyOCR ACTIVE", (14, h - 10),
+        sub_text = f"LOC: {location_name}  |  4-QUADRANT MASTER CLOCK SYNC ACTIVE" if is_paused else f"LOC: {location_name}  |  YOLOv8 + ByteTrack + EasyOCR ACTIVE"
+        cv2.putText(frame, sub_text, (14, h - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.40, (148, 163, 184), 1, cv2.LINE_AA)
 
     def draw_detections(self, frame: np.ndarray, detections: list, frame_idx: int, camera_id: int):
@@ -134,7 +175,8 @@ class VideoFeedManager:
         camera_name: str,
         location_name: str,
         rtsp_url: Optional[str] = None,
-        source_mode: str = "auto"
+        source_mode: str = "auto",
+        is_paused: bool = False
     ) -> Generator[bytes, None, None]:
         """
         Yields multipart MJPEG stream bytes with real-time AI bounding boxes.
@@ -179,28 +221,32 @@ class VideoFeedManager:
             while True:
                 frame = None
                 
-                if cap and cap.isOpened():
-                    ret, raw_frame = cap.read()
-                    if not ret:
-                        # Auto-reconnect for live streams with exponential backoff (2s -> 30s cap)
-                        if source_mode in ["auto", "grid_rtsp", "rtsp", "grid_hls"]:
-                            logger.warning(f"Live feed cam{camera_id:02d} interrupted. Reconnecting in {backoff_delay:.1f}s...")
-                            time.sleep(backoff_delay)
-                            backoff_delay = min(backoff_delay * 2.0, 30.0)
-                            active_url = target_rtsp if source_mode in ["auto", "grid_rtsp", "rtsp"] else hls_grid_url
-                            cap.open(active_url, cv2.CAP_FFMPEG)
+                if is_paused and frame is not None:
+                    # Paused mode: Keep sending the current frozen frame
+                    time.sleep(0.4)
+                else:
+                    if cap and cap.isOpened():
+                        ret, raw_frame = cap.read()
+                        if not ret:
+                            # Auto-reconnect for live streams with exponential backoff (2s -> 30s cap)
+                            if source_mode in ["auto", "grid_rtsp", "rtsp", "grid_hls"]:
+                                logger.warning(f"Live feed cam{camera_id:02d} interrupted. Reconnecting in {backoff_delay:.1f}s...")
+                                time.sleep(backoff_delay)
+                                backoff_delay = min(backoff_delay * 2.0, 30.0)
+                                active_url = target_rtsp if source_mode in ["auto", "grid_rtsp", "rtsp"] else hls_grid_url
+                                cap.open(active_url, cv2.CAP_FFMPEG)
+                            else:
+                                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                                ret, raw_frame = cap.read()
                         else:
-                            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                            ret, raw_frame = cap.read()
-                    else:
-                        backoff_delay = 2.0  # Reset backoff upon healthy frame read
-                    
-                    if ret and raw_frame is not None:
-                        # Resize to standard surveillance 720p / 480p for fast web streaming
-                        h, w = raw_frame.shape[:2]
-                        target_w = 720
-                        target_h = int(h * (target_w / w))
-                        frame = cv2.resize(raw_frame, (target_w, target_h))
+                            backoff_delay = 2.0  # Reset backoff upon healthy frame read
+                        
+                        if ret and raw_frame is not None:
+                            # Resize to standard surveillance 720p / 480p for fast web streaming
+                            h, w = raw_frame.shape[:2]
+                            target_w = 720
+                            target_h = int(h * (target_w / w))
+                            frame = cv2.resize(raw_frame, (target_w, target_h))
 
                 if frame is None:
                     # Professional surveillance signal standby
@@ -214,9 +260,12 @@ class VideoFeedManager:
 
                 # Run Real YOLOv8 vehicle detection
                 detections = []
-                if frame_idx % 2 == 0:
-                    detections = self.detector.detect_vehicles(frame, fallback_on_empty=False)
-                    self._last_detections = detections
+                if not is_paused:
+                    if frame_idx % 2 == 0:
+                        detections = self.detector.detect_vehicles(frame, fallback_on_empty=False)
+                        self._last_detections = detections
+                    else:
+                        detections = getattr(self, "_last_detections", [])
                 else:
                     detections = getattr(self, "_last_detections", [])
 
@@ -234,7 +283,7 @@ class VideoFeedManager:
                 # Read Presentation Timestamp (PTS) in milliseconds
                 pts_ms = cap.get(cv2.CAP_PROP_POS_MSEC) if (cap and cap.isOpened()) else 0.0
 
-                self.draw_hud(frame, camera_name, location_name, fps, pts_ms, source_label)
+                self.draw_hud(frame, camera_name, location_name, fps, pts_ms, source_label, is_paused=is_paused)
 
                 # Encode to high quality JPEG for MJPEG stream
                 ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
@@ -243,7 +292,8 @@ class VideoFeedManager:
                            b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 
                 frame_idx += 1
-                time.sleep(0.035)
+                if not is_paused:
+                    time.sleep(0.035)
         finally:
             if cap:
                 cap.release()
