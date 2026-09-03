@@ -89,6 +89,7 @@ export const triggerTrafficShootFrame = async (cameraId?: number, vehicleCount: 
   const url = `/analytics/traffic-shoot-frame?${cameraId ? `camera_id=${cameraId}&` : ''}vehicle_count=${vehicleCount}`;
   const res = await api.post(url);
   return res.data;
+};
 
 export const getPredictiveIntercept = async (plateNumber: string): Promise<any> => {
   const res = await api.get(`/analytics/route/${encodeURIComponent(plateNumber)}/predict-intercept`);
