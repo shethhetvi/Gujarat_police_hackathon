@@ -25,6 +25,7 @@ interface NavbarProps {
   onMarkAllNotificationsRead: () => void;
   onSimulateAlert: () => void;
   onSimulateRoute: () => void;
+  onRunLiveTestScenario?: () => void;
   isSimulating: boolean;
   trackPlate: string;
   onTrackPlateChange: (p: string) => void;
@@ -89,6 +90,7 @@ export default function Navbar({
   onMarkAllNotificationsRead,
   onSimulateAlert,
   onSimulateRoute,
+  onRunLiveTestScenario,
   isSimulating
 }: NavbarProps) {
   const [istTime, setIstTime] = useState('');
@@ -220,6 +222,34 @@ export default function Navbar({
           <Clock size={13} style={{ color: '#10B981' }} />
           <span style={{ fontFamily: 'var(--font-mono)' }} suppressHydrationWarning>{istTime || 'IST'}</span>
         </div>
+
+        {/* 1-Click Live Challenge Scenario Button */}
+        {onRunLiveTestScenario && (
+          <button
+            onClick={onRunLiveTestScenario}
+            disabled={isSimulating}
+            style={{
+              padding: '0.45rem 0.95rem',
+              borderRadius: '9999px',
+              border: '1.5px solid #F59E0B',
+              background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+              color: '#FFFFFF',
+              fontSize: '0.78rem',
+              fontWeight: 900,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 3px 10px rgba(217, 119, 6, 0.4)',
+              letterSpacing: '0.02em',
+              transition: 'all 0.2s ease'
+            }}
+            title="Execute Live Evaluation Challenge: Track Designated Target GJ01AB1234, Trigger Real-time Alert, Plot Route on GIS & Open Evidence Dossier"
+          >
+            <Zap size={14} style={{ color: '#FEF08A' }} />
+            <span>{isSimulating ? 'Executing Challenge…' : '⚡ Live Test Scenario'}</span>
+          </button>
+        )}
 
         {/* Demo Simulator Buttons */}
         <button

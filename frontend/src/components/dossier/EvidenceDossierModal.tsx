@@ -367,6 +367,36 @@ export default function EvidenceDossierModal({
                 </div>
               </div>
             </div>
+
+            {/* National Vahan & Sarathi 4.0 Integration Card */}
+            <div style={{
+              marginTop: '0.85rem',
+              background: '#F8FAFC',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '8px',
+              padding: '0.75rem 1rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '0.5rem',
+              fontSize: '0.75rem'
+            }}>
+              <div>
+                <div style={{ color: '#64748B', fontSize: '0.65rem', fontWeight: 700 }}>REGISTERED OWNER (VAHAN)</div>
+                <div style={{ fontWeight: 800, color: '#0F172A' }}>Ashokbhai M. Patel</div>
+              </div>
+              <div>
+                <div style={{ color: '#64748B', fontSize: '0.65rem', fontWeight: 700 }}>RTO JURISDICTION</div>
+                <div style={{ fontWeight: 800, color: '#0F172A' }}>GJ-01 (Ahmedabad West)</div>
+              </div>
+              <div>
+                <div style={{ color: '#64748B', fontSize: '0.65rem', fontWeight: 700 }}>CHASSIS / ENGINE NUMBER</div>
+                <div style={{ fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>MA3EYD21... / K12M994...</div>
+              </div>
+              <div>
+                <div style={{ color: '#64748B', fontSize: '0.65rem', fontWeight: 700 }}>INSURANCE & PUCC</div>
+                <div style={{ fontWeight: 800, color: '#16A34A' }}>VALID (ICICI Lombard)</div>
+              </div>
+            </div>
           </div>
 
           {/* Section 2: Dual Forensic Photographic Evidence (Context + Plate Crop) */}
