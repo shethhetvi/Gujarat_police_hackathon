@@ -19,5 +19,5 @@ easyocr>=1.7.0
 pillow>=10.0.0
 
 # Protocol & Video Ingestion
-python-onvif-zeep>=0.2.12
+onvif-zeep>=0.2.12
 imutils>=0.5.4
