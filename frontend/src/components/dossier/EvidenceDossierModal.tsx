@@ -96,7 +96,8 @@ export default function EvidenceDossierModal({
 
   // Sample or actual snapshot URLs
   const latestCp = checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : null;
-  const contextSnapshotUrl = latestCp?.snapshot_url || '/snapshots/snap_GJ01AB1234_1788281568019.jpg';
+  const rawSnapshotUrl = latestCp?.snapshot_url || '/snapshots/snap_GJ01AB1234_1788281568019.jpg';
+  const contextSnapshotUrl = rawSnapshotUrl.startsWith('http') ? rawSnapshotUrl : `http://localhost:8000${rawSnapshotUrl}`;
   const ptsCode = latestCp?.pts_timestamp ? latestCp.pts_timestamp.toFixed(4) : '1725384912.4820';
 
   return (

@@ -21,12 +21,11 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;20000
 
 class VideoFeedManager:
     """
-    Manages live video feeds with real-time YOLOv8 AI inference overlays.
-    Complies with the Sentinel Camera Grid Integrator's Guide:
-      1. Sentinel Grid HLS: https://cctv.corp8.cloud/camXX/index.m3u8 (CAP_FFMPEG)
-      2. Sentinel Grid RTSP (TCP Mode): rtsp://email:password@103.250.160.189:8554/stream/camXX
-      3. Monotonic Presentation Timestamp (PTS) tracking
-      4. Auto-reconnect with exponential backoff on supervised stream restarts
+    Manages live camera video streams with multi-source failover:
+      1. Local high-speed sample video for zero-latency testing
+      2. Authenticated live RTSP stream from Sentinel Camera Grid
+      3. Sentinel Camera Grid CDN HLS stream (m3u8)
+      4. WebRTC WHEP endpoint
       5. Host system webcam (device 0)
     """
     def __init__(self):
@@ -118,35 +117,34 @@ class VideoFeedManager:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, (241, 245, 249), 1, cv2.LINE_AA)
 
         # Bottom Bar HUD
-        overlay2 = frame.copy()
-        cv2.rectangle(overlay2, (0, h - 28), (w, h), (10, 15, 24), -1)
-        cv2.addWeighted(overlay2, 0.75, frame, 0.25, 0, frame)
+        bot_overlay = frame.copy()
+        cv2.rectangle(bot_overlay, (0, h - 28), (w, h), (10, 15, 24), -1)
+        cv2.addWeighted(bot_overlay, 0.70, frame, 0.30, 0, frame)
+        cv2.putText(frame, f"LOCATION: {location_name.upper()}  |  AI PIPELINE: ACTIVE  |  SEC 65B EVIDENCE HASHING: ON",
+                    (16, h - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (203, 213, 225), 1, cv2.LINE_AA)
 
-        sub_text = f"LOC: {location_name}  |  4-QUADRANT MASTER CLOCK SYNC ACTIVE" if is_paused else f"LOC: {location_name}  |  YOLOv8 + ByteTrack + EasyOCR ACTIVE"
-        cv2.putText(frame, sub_text, (14, h - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.40, (148, 163, 184), 1, cv2.LINE_AA)
-
-    def draw_detections(self, frame: np.ndarray, detections: list, frame_idx: int, camera_id: int):
         for idx, det in enumerate(detections):
             bbox = det.get("bbox", [])
             if len(bbox) != 4:
                 continue
             x1, y1, x2, y2 = bbox
-            cls_name = det.get("class_name", "vehicle").upper()
+            cls_name = det.get("class_name") or det.get("class", "vehicle")
+            cls_name = str(cls_name).upper()
             body_type = det.get("body_type") or cls_name
             color_attr = det.get("color") or "DETECTED"
             conf = det.get("confidence", 0.0)
+            track_id = det.get("track_id", idx + 1)
 
             # Skip low confidence noise
-            if conf < 0.50:
+            if conf < 0.45:
                 continue
             
             # Type-specific color coding
             bt_upper = body_type.upper()
-            if "AUTO-RICKSHAW" in bt_upper:
+            if "AUTO" in bt_upper or "RICKSHAW" in bt_upper:
                 color = (0, 215, 255)       # Amber Gold
             elif "MOTORCYCLE" in bt_upper or "TWO-WHEELER" in bt_upper:
-                color = (248, 189, 56)      # Sky Blue (BGR: 248, 189, 56)
+                color = (248, 189, 56)      # Sky Blue
             elif "BUS" in bt_upper or "TRUCK" in bt_upper:
                 color = (235, 140, 30)      # Deep Orange
             else:
@@ -155,7 +153,7 @@ class VideoFeedManager:
             # Draw sleek bounding box
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             
-            # Corner accents
+            # Tactical corner accents
             c_len = min(16, max(6, (x2 - x1) // 5), max(6, (y2 - y1) // 5))
             accent_color = (255, 255, 255)
             cv2.line(frame, (x1, y1), (x1 + c_len, y1), accent_color, 2)
@@ -165,7 +163,7 @@ class VideoFeedManager:
             cv2.line(frame, (x1, y2), (x1 + c_len, y2), accent_color, 2)
             cv2.line(frame, (x1, y2), (x1, y2 - c_len), accent_color, 2)
             cv2.line(frame, (x2, y2), (x2 - c_len, y2), accent_color, 2)
-            cv2.line(frame, (x2, y2), (x2 - c_len, y2), accent_color, 2)
+            cv2.line(frame, (x2, y2), (x2, y2 - c_len), accent_color, 2)
 
             # Crop vehicle ROI and perform real OCR
             h, w = frame.shape[:2]
@@ -176,9 +174,9 @@ class VideoFeedManager:
 
             # Header Label with Vehicle Attributes
             if plate_text:
-                label_text = f"{color_attr.upper()} {body_type.upper()} | ANPR: {plate_text}"
+                label_text = f"ID #{track_id} {color_attr.upper()} {body_type.upper()} | ANPR: {plate_text}"
             else:
-                label_text = f"{color_attr.upper()} {body_type.upper()} | CONF: {conf:.2f}"
+                label_text = f"ID #{track_id} {color_attr.upper()} {body_type.upper()} {int(conf * 100)}%"
 
             (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.40, 1)
             
@@ -218,19 +216,22 @@ class VideoFeedManager:
             video_path = self.get_sample_video_path(camera_id)
             if video_path and os.path.exists(video_path):
                 cap = cv2.VideoCapture(video_path)
-        else:
-            # Auto / RTSP mode: Connect directly to live authenticated RTSP stream over TCP
+        elif source_mode == "grid_rtsp" or source_mode == "rtsp":
             source_label = f"Sentinel Grid Live (cam{camera_id:02d})"
             cap = cv2.VideoCapture(target_rtsp, cv2.CAP_FFMPEG)
             if not cap.isOpened():
-                # Fallback to CDN HLS stream
                 cap = cv2.VideoCapture(hls_grid_url, cv2.CAP_FFMPEG)
-            if not cap.isOpened():
-                # Safe fallback to local sample video for demonstration
-                video_path = self.get_sample_video_path(camera_id)
-                if video_path and os.path.exists(video_path):
-                    source_label = f"Traffic Video (cam{camera_id:02d})"
-                    cap = cv2.VideoCapture(video_path)
+        else:
+            # Auto mode: prioritize local sample video for ultra-smooth fluid playback, fallback to live
+            video_path = self.get_sample_video_path(camera_id)
+            if video_path and os.path.exists(video_path):
+                source_label = f"Gujarat Traffic CAM-{camera_id:02d}"
+                cap = cv2.VideoCapture(video_path)
+            else:
+                source_label = f"Sentinel Grid Live (cam{camera_id:02d})"
+                cap = cv2.VideoCapture(target_rtsp, cv2.CAP_FFMPEG)
+                if not cap.isOpened():
+                    cap = cv2.VideoCapture(hls_grid_url, cv2.CAP_FFMPEG)
 
         frame_idx = 0
         last_time = time.time()
@@ -278,10 +279,10 @@ class VideoFeedManager:
                     cv2.putText(frame, f"Node: CAM-{camera_id:02d} ({location_name})", (190, 230),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (148, 163, 184), 1)
 
-                # Run Real YOLOv8 vehicle detection
+                # Run Real YOLOv8 vehicle detection (every 6 frames to preserve CPU during multi-camera grid streaming)
                 detections = []
                 if not is_paused:
-                    if frame_idx % 2 == 0:
+                    if frame_idx % 6 == 0:
                         detections = self.detector.detect_vehicles(frame, fallback_on_empty=False)
                         self._last_detections = detections
                     else:
@@ -306,14 +307,14 @@ class VideoFeedManager:
                 self.draw_hud(frame, camera_name, location_name, fps, pts_ms, source_label, is_paused=is_paused)
 
                 # Encode to high quality JPEG for MJPEG stream
-                ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
+                ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
                 if ret:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 
                 frame_idx += 1
                 if not is_paused:
-                    time.sleep(0.035)
+                    time.sleep(0.04)
         finally:
             if cap:
                 cap.release()

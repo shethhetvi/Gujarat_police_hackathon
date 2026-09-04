@@ -41,6 +41,11 @@ export const deleteWatchlistEntry = async (entryId: number): Promise<any> => {
   return res.data;
 };
 
+export const dispatchTargetPcr = async (entryId: number, unitName: string = "PCR Cheetah-04 (Intercity Intercept)"): Promise<any> => {
+  const res = await api.post(`/watchlist/${entryId}/dispatch`, { unit_name: unitName });
+  return res.data;
+};
+
 // ─── Alerts ───────────────────────────────────────────────────────────────
 export const getAlerts = async (acknowledged: boolean = false): Promise<Alert[]> => {
   const res = await api.get(`/alerts/?acknowledged=${acknowledged}`);

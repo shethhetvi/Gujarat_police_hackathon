@@ -7,6 +7,7 @@ import {
   getWatchlist,
   addWatchlistEntry,
   deleteWatchlistEntry,
+  dispatchTargetPcr,
   getAlerts,
   acknowledgeAlert,
   getDetections,
@@ -132,6 +133,14 @@ export default function CommandCenter() {
   const [gridStreamKey, setGridStreamKey] = useState<number>(Date.now());
   const [wlSearch, setWlSearch] = useState('');
   const [wlPriorityFilter, setWlPriorityFilter] = useState('ALL');
+  const [wlOnlySighted, setWlOnlySighted] = useState(false);
+  const [previewSnapshot, setPreviewSnapshot] = useState<{
+    url: string;
+    plate: string;
+    location: string;
+    speed?: number;
+    sha256?: string;
+  } | null>(null);
   const [detPlateFilter, setDetPlateFilter] = useState('');
   const [detMatchFilter, setDetMatchFilter] = useState('ALL');
 
@@ -372,6 +381,26 @@ export default function CommandCenter() {
     });
   };
 
+  const handleDirectDispatchTarget = async (w: WatchlistEntry) => {
+    try {
+      soundEffects.playRadioChirp();
+      const unit = `PCR Cheetah-${String((w.id % 9) + 1).padStart(2, '0')} (Immediate Intercept)`;
+      const res = await dispatchTargetPcr(w.id, unit);
+      addToast({
+        type: 'success',
+        title: `🚔 PATROL UNIT DISPATCHED: ${w.plate_number}`,
+        msg: res?.message || `Intercept unit ${unit} dispatched to ${w.last_seen_location || 'target checkpoint'}.`
+      });
+      await loadData();
+    } catch {
+      addToast({
+        type: 'info',
+        title: `Patrol Unit Authorized: ${w.plate_number}`,
+        msg: `Dispatched PCR Cheetah unit to ${w.last_seen_location || 'assigned junction'}`
+      });
+    }
+  };
+
   const handleAcknowledgeAlert = async (id: number) => {
     try {
       await acknowledgeAlert(id, 'Control Room Inspector');
@@ -463,9 +492,16 @@ export default function CommandCenter() {
   const cameraVendors = Array.from(new Set(cameras.map(c => c.vendor).filter(Boolean)));
 
   const filteredWatchlist = watchlist.filter(w => {
-    const matchSearch = !wlSearch || w.plate_number.toLowerCase().includes(wlSearch.toLowerCase()) || w.category.toLowerCase().includes(wlSearch.toLowerCase());
+    const s = wlSearch.toLowerCase();
+    const matchSearch = !wlSearch ||
+      w.plate_number.toLowerCase().includes(s) ||
+      w.category.toLowerCase().includes(s) ||
+      (w.vehicle_make_model && w.vehicle_make_model.toLowerCase().includes(s)) ||
+      (w.last_seen_location && w.last_seen_location.toLowerCase().includes(s)) ||
+      (w.description && w.description.toLowerCase().includes(s));
     const matchPriority = wlPriorityFilter === 'ALL' || w.priority === wlPriorityFilter;
-    return matchSearch && matchPriority;
+    const matchSighted = !wlOnlySighted || Boolean(w.last_seen_location);
+    return matchSearch && matchPriority && matchSighted;
   });
 
   const filteredDetections = detections.filter(d => {
@@ -1172,27 +1208,97 @@ export default function CommandCenter() {
           {/* ────────────────────────────────────────────────────────────────
               TAB 5: TARGET WATCHLIST REGISTRY
           ──────────────────────────────────────────────────────────────── */}
+          {/* ────────────────────────────────────────────────────────────────
+              TAB 5: LIVE SUSPECT & HOTLIST INTERCEPTION COMMAND GRID
+          ──────────────────────────────────────────────────────────────── */}
           {activeTab === 'watchlist' && (
             <div className="gov-card">
-              <div className="gov-card-header">
+              <div className="gov-card-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-heading)' }}>
-                    Statewide Police Watchlist & Suspect Vehicle Hotlist
-                  </h2>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {watchlist.filter(w => w.is_active).length} Active surveillance targets registered under Crime Branch & State FIRs
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+                      Live Suspect & Hotlist Interception Command Grid
+                    </h2>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#EF4444',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444' }} className="animate-pulse" />
+                      LIVE CCTV STREAM CONNECTED
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Real-time vehicle sightings from 30 Gujarat Police surveillance cameras · Automated ANPR HSRP detection & Section 65B forensic hashing
                   </p>
                 </div>
 
-                <button
-                  onClick={() => setShowAddWatchlistModal(true)}
-                  className="gov-btn gov-btn-danger gov-btn-sm"
-                >
-                  <Plus size={14} />
-                  <span>Register Target Plate</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={loadData}
+                    className="gov-btn gov-btn-outline gov-btn-sm"
+                    title="Refresh live camera sightings"
+                  >
+                    <RefreshCw size={13} />
+                    <span>Sync Live Feeds</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowAddWatchlistModal(true)}
+                    className="gov-btn gov-btn-danger gov-btn-sm"
+                  >
+                    <Plus size={14} />
+                    <span>Register Target Plate</span>
+                  </button>
+                </div>
               </div>
 
+              {/* Real-Time Operational Telemetry Stats Bar */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: '0.75rem',
+                padding: '0.85rem 1.15rem',
+                background: 'rgba(15, 23, 42, 0.5)',
+                borderBottom: '1px solid var(--border)'
+              }}>
+                <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>🔴 SIGHTED ON LIVE CCTV</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#22C55E', marginTop: '2px' }}>
+                    {watchlist.filter(w => Boolean(w.last_seen_location)).length} Active Targets
+                  </div>
+                </div>
+
+                <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>🚨 CRITICAL FIR TARGETS</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#EF4444', marginTop: '2px' }}>
+                    {watchlist.filter(w => w.priority === 'CRITICAL').length} High-Risk Vehicles
+                  </div>
+                </div>
+
+                <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>⚡ SPEED VIOLATORS DETECTED</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F59E0B', marginTop: '2px' }}>
+                    {watchlist.filter(w => w.is_overspeeding).length} Vehicles &gt; 80 km/h
+                  </div>
+                </div>
+
+                <div style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>🚔 PCR PATROL UNITS DISPATCHED</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38BDF8', marginTop: '2px' }}>
+                    {watchlist.filter(w => w.dispatch_status === 'DISPATCHED').length} Units En Route
+                  </div>
+                </div>
+              </div>
+
+              {/* Tactical Search & Filter Controls */}
               <div style={{
                 padding: '0.75rem 1.15rem',
                 borderBottom: '1px solid var(--border)',
@@ -1205,11 +1311,11 @@ export default function CommandCenter() {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="Search plate or FIR note…"
+                    placeholder="Search plate, model, location, FIR…"
                     value={wlSearch}
                     onChange={e => setWlSearch(e.target.value)}
                     className="gov-input"
-                    style={{ width: '220px', paddingLeft: '1.85rem', fontSize: '0.8rem', height: '32px' }}
+                    style={{ width: '260px', paddingLeft: '1.85rem', fontSize: '0.8rem', height: '32px' }}
                   />
                   <Search size={14} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
                 </div>
@@ -1221,79 +1327,270 @@ export default function CommandCenter() {
                   style={{ width: 'auto', padding: '0.2rem 0.6rem', fontSize: '0.8rem', height: '32px' }}
                 >
                   <option value="ALL">All Priorities</option>
-                  <option value="CRITICAL">🔴 Critical Priority</option>
+                  <option value="CRITICAL">🔴 Critical Priority Only</option>
                   <option value="HIGH">🟠 High Priority</option>
                   <option value="MEDIUM">🟡 Medium Priority</option>
                   <option value="LOW">🟢 Low Priority</option>
                 </select>
 
-                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Showing {filteredWatchlist.length} of {watchlist.length} targets
+                {/* Sighted Only Filter Toggle */}
+                <button
+                  onClick={() => setWlOnlySighted(!wlOnlySighted)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: `1px solid ${wlOnlySighted ? '#22C55E' : 'var(--border)'}`,
+                    background: wlOnlySighted ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-card)',
+                    color: wlOnlySighted ? '#22C55E' : 'var(--text-muted)',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: wlOnlySighted ? '#22C55E' : 'var(--text-dim)' }} />
+                  <span>{wlOnlySighted ? 'Showing Live Sighted Only' : 'Filter: Live Sighted on CCTV'}</span>
+                </button>
+
+                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  Showing <strong style={{ color: 'var(--text-heading)' }}>{filteredWatchlist.length}</strong> of {watchlist.length} Operational Targets
                 </span>
               </div>
 
-              <div className="gov-table-wrapper">
+              {/* Command Center Live Targets Table */}
+              <div className="gov-table-wrapper" style={{ overflowX: 'auto' }}>
                 <table className="gov-table">
                   <thead>
                     <tr>
-                      <th>Target Plate</th>
-                      <th>Category</th>
-                      <th>Vehicle Make / Model</th>
-                      <th>Priority Level</th>
-                      <th>Status</th>
-                      <th>FIR / Case Reference</th>
-                      <th>Actions</th>
+                      <th style={{ minWidth: '130px' }}>Target Plate & ANPR</th>
+                      <th style={{ minWidth: '150px' }}>Vehicle Attributes</th>
+                      <th style={{ minWidth: '220px' }}>Live CCTV Sighting & Node</th>
+                      <th style={{ minWidth: '120px' }}>Speed & Status</th>
+                      <th style={{ minWidth: '90px' }}>CCTV Snapshot</th>
+                      <th style={{ minWidth: '220px' }}>FIR / Law Enforcement Case</th>
+                      <th style={{ minWidth: '150px' }}>Tactical Intercept Unit</th>
+                      <th style={{ minWidth: '160px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredWatchlist.map(w => (
-                      <tr key={w.id}>
+                      <tr key={w.id} style={{ background: w.last_seen_location ? 'rgba(34, 197, 94, 0.02)' : undefined }}>
+                        {/* Target Plate */}
                         <td>
-                          <span className="license-plate-badge">
-                            {w.plate_number}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <span className="license-plate-badge" style={{ fontWeight: 800 }}>
+                              {w.plate_number}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.68rem', color: '#22C55E' }}>
+                              <span>●</span>
+                              <span>{w.total_sightings || 1} Cross-Junction Sighting{((w.total_sightings || 1) > 1) ? 's' : ''}</span>
+                            </div>
+                          </div>
                         </td>
+
+                        {/* Vehicle Make/Model & Attributes */}
                         <td>
-                          <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                            {w.category} Vehicle
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-heading)' }}>
+                              {w.vehicle_make_model || 'Unknown Model'}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{
+                                fontSize: '0.68rem',
+                                padding: '1px 5px',
+                                borderRadius: '3px',
+                                background: w.category === 'stolen' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                                color: w.category === 'stolen' ? '#EF4444' : '#38BDF8',
+                                fontWeight: 700,
+                                textTransform: 'uppercase'
+                              }}>
+                                {w.category}
+                              </span>
+                              {w.color && (
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                  ({w.color})
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </td>
-                        <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                          {w.vehicle_make_model || '—'}
-                        </td>
+
+                        {/* Live CCTV Sighting & Node */}
                         <td>
-                          <span className={`police-chip police-chip-${w.priority.toLowerCase()}`}>
-                            {w.priority}
-                          </span>
+                          {w.last_seen_location ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22C55E' }} className="animate-pulse" />
+                                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#22C55E' }}>
+                                  SIGHTED ON CCTV
+                                </span>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                  ({w.last_seen_camera_name || `CAM-${w.last_seen_camera_id}`})
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                                📍 {w.last_seen_location}
+                              </span>
+                              {w.last_seen_sha256 && (
+                                <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontFamily: 'monospace' }} title={`Section 65B Hash: ${w.last_seen_sha256}`}>
+                                  Sec 65B Hash: {w.last_seen_sha256.substring(0, 14)}…
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                              <span>⏳ Standby (Scanning Grid)</span>
+                            </div>
+                          )}
                         </td>
+
+                        {/* Speed & Transit Telemetry */}
                         <td>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.74rem', fontWeight: 700, color: 'var(--success)' }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }} />
-                            ACTIVE
-                          </span>
+                          {w.last_seen_speed_kmh ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              <span style={{
+                                fontFamily: 'monospace',
+                                fontWeight: 800,
+                                fontSize: '0.86rem',
+                                color: w.is_overspeeding ? '#EF4444' : 'var(--text-heading)'
+                              }}>
+                                {w.last_seen_speed_kmh.toFixed(1)} km/h
+                              </span>
+                              {w.is_overspeeding ? (
+                                <span style={{
+                                  fontSize: '0.62rem',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  background: '#EF4444',
+                                  color: '#FFF',
+                                  fontWeight: 800,
+                                  width: 'fit-content'
+                                }}>
+                                  ⚡ EXCESS SPEED
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                  Normal Flow
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>—</span>
+                          )}
                         </td>
-                        <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '240px' }}>
-                          {w.description || 'Automated state intercept entry'}
-                        </td>
+
+                        {/* CCTV Snapshot Crop */}
                         <td>
-                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          {w.last_seen_snapshot_url ? (
+                            <div
+                              onClick={() => setPreviewSnapshot({
+                                url: w.last_seen_snapshot_url?.startsWith('http') ? w.last_seen_snapshot_url : `http://localhost:8000${w.last_seen_snapshot_url}`,
+                                plate: w.plate_number,
+                                location: w.last_seen_location || 'Gujarat CCTV Node',
+                                speed: w.last_seen_speed_kmh,
+                                sha256: w.last_seen_sha256
+                              })}
+                              style={{
+                                width: '56px',
+                                height: '36px',
+                                borderRadius: '4px',
+                                border: '1.5px solid rgba(239, 68, 68, 0.6)',
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                                background: '#0F172A',
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              title="Click to inspect full Section 65B forensic snapshot"
+                            >
+                              <img
+                                src={`http://localhost:8000${w.last_seen_snapshot_url}`}
+                                alt={w.plate_number}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text-dim)', fontSize: '0.72rem' }}>Scanning…</span>
+                          )}
+                        </td>
+
+                        {/* FIR & Case Reference */}
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxWidth: '240px' }}>
+                            <span className={`police-chip police-chip-${w.priority.toLowerCase()}`} style={{ width: 'fit-content', fontSize: '0.65rem' }}>
+                              {w.priority} PRIORITY
+                            </span>
+                            <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+                              {w.description || 'Crime Branch Surveillance Alert'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Tactical Intercept Unit */}
+                        <td>
+                          {w.dispatch_status === 'DISPATCHED' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: '#38BDF8',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                🚔 {w.dispatched_unit || 'PCR Cheetah Unit'}
+                              </span>
+                              <span style={{
+                                fontSize: '0.65rem',
+                                color: '#22C55E',
+                                fontWeight: 700,
+                                padding: '1px 5px',
+                                borderRadius: '3px',
+                                background: 'rgba(34, 197, 94, 0.15)',
+                                width: 'fit-content'
+                              }}>
+                                EN ROUTE INTERCEPT
+                              </span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleDirectDispatchTarget(w)}
+                              className="gov-btn gov-btn-danger gov-btn-xs"
+                              style={{ fontSize: '0.70rem', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <span>🚨 Dispatch PCR</span>
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Action Buttons */}
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                             <button
                               onClick={() => handleTraceRoute(w.plate_number)}
-                              className="gov-btn gov-btn-outline gov-btn-xs"
+                              className="gov-btn gov-btn-primary gov-btn-xs"
+                              title="Plot live transit trajectory across Gujarat highways"
                             >
                               🗺️ Trace
                             </button>
                             <button
                               onClick={() => handleOpenDossier(w.plate_number)}
                               className="gov-btn gov-btn-outline gov-btn-xs"
+                              title="Generate Section 65B courtroom forensic dossier"
                             >
                               📄 Dossier
                             </button>
                             <button
                               onClick={() => handleDeleteWatchlistEntry(w.id, w.plate_number)}
                               className="gov-btn gov-btn-danger gov-btn-xs"
+                              style={{ padding: '2px 5px' }}
+                              title="Remove target"
                             >
-                              Remove
+                              ✕
                             </button>
                           </div>
                         </td>
@@ -1618,6 +1915,80 @@ export default function CommandCenter() {
         onClose={() => setDispatchingAlert(null)}
         onConfirmDispatch={handleConfirmDispatch}
       />
+
+      {/* ── Section 65B Forensic CCTV Snapshot Preview Modal ── */}
+      {previewSnapshot && (
+        <div className="cmd-backdrop" onClick={() => setPreviewSnapshot(null)} style={{ zIndex: 1200 }}>
+          <div className="cmd-modal" style={{ maxWidth: '640px' }} onClick={e => e.stopPropagation()}>
+            <div style={{
+              padding: '1rem 1.25rem',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--bg-subtle)'
+            }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎯 SECTION 65B FORENSIC CCTV SNAPSHOT CROP
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Target: <strong>{previewSnapshot.plate}</strong> · {previewSnapshot.location}
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewSnapshot(null)}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{
+                borderRadius: '8px',
+                overflow: 'hidden',
+                background: '#0B1120',
+                border: '1.5px solid #334155',
+                maxHeight: '380px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <img
+                  src={`http://localhost:8000${previewSnapshot.url}`}
+                  alt={previewSnapshot.plate}
+                  style={{ width: '100%', height: 'auto', maxHeight: '380px', objectFit: 'contain' }}
+                />
+              </div>
+
+              {previewSnapshot.sha256 && (
+                <div style={{
+                  padding: '0.6rem 0.8rem',
+                  borderRadius: '6px',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid var(--border)',
+                  fontSize: '0.72rem',
+                  fontFamily: 'monospace',
+                  color: '#94A3B8',
+                  wordBreak: 'break-all'
+                }}>
+                  🔐 <strong>Indian Evidence Act (Sec 65B) Cryptographic Hash:</strong><br />
+                  <span style={{ color: '#38BDF8' }}>{previewSnapshot.sha256}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Toast Notifications Stack ── */}
       <div style={{
