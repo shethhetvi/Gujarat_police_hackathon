@@ -76,57 +76,6 @@ import ThreatDonutChart from '../components/analytics/ThreatDonutChart';
 import SplineTrendChart from '../components/analytics/SplineTrendChart';
 import PatrolBatteryWidget from '../components/analytics/PatrolBatteryWidget';
 
-// ─── High-Grade Default Command Center Data (Ensures Zero Blank States) ──────
-const DEFAULT_CAMERAS: Camera[] = [
-  { id: 1, name: 'Ahmedabad S.G. Highway Junction', vendor: 'Hikvision', protocol: 'RTSP', stream_url: 'rtsp://cctv/ahmedabad_sg', location_name: 'SG Highway, Ahmedabad', latitude: 23.0338, longitude: 72.5085, is_active: true },
-  { id: 2, name: 'Ahmedabad Vastrapur Lake Circle', vendor: 'CP Plus', protocol: 'RTSP', stream_url: 'rtsp://cctv/vastrapur', location_name: 'Vastrapur, Ahmedabad', latitude: 23.0350, longitude: 72.5293, is_active: true },
-  { id: 3, name: 'Surat Dumas Road Junction', vendor: 'Dahua', protocol: 'ONVIF', stream_url: 'rtsp://cctv/surat_dumas', location_name: 'Dumas Road, Surat', latitude: 21.1702, longitude: 72.8311, is_active: true },
-  { id: 4, name: 'Vadodara Vadsar Circle', vendor: 'Honeywell', protocol: 'RTSP', stream_url: 'rtsp://cctv/vadsar', location_name: 'Vadsar, Vadodara', latitude: 22.2950, longitude: 73.1740, is_active: true },
-  { id: 5, name: 'Gandhinagar Sector 9 Circle', vendor: 'Bosch', protocol: 'RTSP', stream_url: 'rtsp://cctv/gn_sec9', location_name: 'Sector 9, Gandhinagar', latitude: 23.2222, longitude: 72.6497, is_active: true },
-];
-
-const DEFAULT_WATCHLIST: WatchlistEntry[] = [
-  { id: 1, plate_number: 'GJ01AB1234', category: 'stolen', priority: 'CRITICAL', vehicle_make_model: 'White Fortuner', description: 'FIR #4092 Navrangpura PS - Armed Stolen Vehicle', is_active: true },
-  { id: 2, plate_number: 'GJ05CD5678', category: 'wanted', priority: 'HIGH', vehicle_make_model: 'Silver Swift', description: 'FIR #1120 Katargam PS - Wanted in Highway Robbery', is_active: true },
-  { id: 3, plate_number: 'GJ27EF9012', category: 'blacklisted', priority: 'HIGH', vehicle_make_model: 'Black Scorpio', description: 'State CID Intelligence Intercept Order', is_active: true },
-];
-
-const DEFAULT_ALERTS: Alert[] = [
-  {
-    id: 101,
-    plate_number: 'GJ01AB1234',
-    category: 'stolen',
-    severity: 'CRITICAL',
-    camera_id: 1,
-    camera_name: 'Ahmedabad S.G. Highway Junction',
-    location_name: 'Ahmedabad S.G. Highway',
-    timestamp: '2026-09-03T10:15:00.000Z',
-    snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
-    acknowledged: false
-  },
-  {
-    id: 102,
-    plate_number: 'GJ05CD5678',
-    category: 'wanted',
-    severity: 'HIGH',
-    camera_id: 3,
-    camera_name: 'Surat Dumas Road Junction',
-    location_name: 'Dumas Road, Surat',
-    timestamp: '2026-09-03T10:30:00.000Z',
-    snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
-    acknowledged: false
-  }
-];
-
-const DEFAULT_DETECTIONS: DetectionEvent[] = [
-  { id: 1, camera_id: 1, plate_number: 'GJ01AB1234', confidence: 0.985, matched: true, timestamp: '2026-09-03T10:15:00.000Z' },
-  { id: 2, camera_id: 1, plate_number: 'GJ01XY4411', confidence: 0.978, matched: false, timestamp: '2026-09-03T10:18:00.000Z' },
-  { id: 3, camera_id: 3, plate_number: 'GJ05CD5678', confidence: 0.991, matched: true, timestamp: '2026-09-03T10:30:00.000Z' },
-  { id: 4, camera_id: 2, plate_number: 'GJ27EF9012', confidence: 0.965, matched: true, timestamp: '2026-09-03T10:45:00.000Z' },
-  { id: 5, camera_id: 4, plate_number: 'GJ06MN8822', confidence: 0.982, matched: false, timestamp: '2026-09-03T11:00:00.000Z' },
-  { id: 6, camera_id: 5, plate_number: 'GJ02PQ6633', confidence: 0.974, matched: false, timestamp: '2026-09-03T11:15:00.000Z' },
-];
-
 interface Toast {
   id: number;
   type: 'alert' | 'success' | 'info' | 'warning';
@@ -139,17 +88,16 @@ export default function CommandCenter() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<SidebarTab>('dashboard');
 
-  // Pre-seed with default data so UI is instantly rich and never shows 0/0
-  const [cameras, setCameras] = useState<Camera[]>(DEFAULT_CAMERAS);
-  const [watchlist, setWatchlist] = useState<WatchlistEntry[]>(DEFAULT_WATCHLIST);
-  const [alerts, setAlerts] = useState<Alert[]>(DEFAULT_ALERTS);
-  const [detections, setDetections] = useState<DetectionEvent[]>(DEFAULT_DETECTIONS);
+  const [cameras, setCameras] = useState<Camera[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistEntry[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [detections, setDetections] = useState<DetectionEvent[]>([]);
   const [summary, setSummary] = useState<AnalyticsSummary>({
-    total_cameras: 5,
-    active_cameras: 5,
-    watchlist_count: 3,
-    total_detections: 14820,
-    unacknowledged_alerts: 2
+    total_cameras: 0,
+    active_cameras: 0,
+    watchlist_count: 0,
+    total_detections: 0,
+    unacknowledged_alerts: 0
   });
 
   const [backendOnline, setBackendOnline] = useState(false);
@@ -157,24 +105,7 @@ export default function CommandCenter() {
   const [isRefreshingCams, setIsRefreshingCams] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 'notif-init-1',
-      title: '🚨 Critical Intercept: GJ01AB1234',
-      message: 'Stolen White Fortuner identified at Ahmedabad S.G. Highway Junction',
-      timestamp: '3m ago',
-      severity: 'CRITICAL',
-      read: false
-    },
-    {
-      id: 'notif-init-2',
-      title: '⚠️ High Alert: GJ05CD5678',
-      message: 'Wanted Suspect vehicle spotted at Surat Dumas Road',
-      timestamp: '7m ago',
-      severity: 'HIGH',
-      read: false
-    }
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   // Modals
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -191,12 +122,10 @@ export default function CommandCenter() {
   const [showAddCameraModal, setShowAddCameraModal] = useState(false);
   const [showAddWatchlistModal, setShowAddWatchlistModal] = useState(false);
   const [dispatchingAlert, setDispatchingAlert] = useState<Alert | null>(null);
-  const [dispatchedUnits, setDispatchedUnits] = useState<Record<number, string>>({
-    101: 'PCR Van #14 (Ahmedabad Crime Branch)'
-  });
+  const [dispatchedUnits, setDispatchedUnits] = useState<Record<number, string>>({});
 
   // Filters
-  const [trackPlate, setTrackPlate] = useState('GJ01AB1234');
+  const [trackPlate, setTrackPlate] = useState('');
   const [camStatusFilter, setCamStatusFilter] = useState('ALL');
   const [camVendorFilter, setCamVendorFilter] = useState('ALL');
   const [gridSourceMode, setGridSourceMode] = useState<string>('auto');
@@ -239,7 +168,7 @@ export default function CommandCenter() {
     addToast({ type: 'info', title: `Switched to ${next.toUpperCase()} Mode` });
   };
 
-  // Load Data from Backend (Silently merges with defaults if offline)
+  // Load Data from Backend
   const loadData = useCallback(async () => {
     try {
       const isHealthy = await checkHealth();
@@ -254,17 +183,20 @@ export default function CommandCenter() {
           getAnalyticsSummary().catch(() => null)
         ]);
 
-        if (c?.length) setCameras(c);
-        if (w?.length) setWatchlist(w);
-        if (a?.length) setAlerts(a);
-        if (d?.length) setDetections(d);
+        if (c) setCameras(c);
+        if (w) {
+          setWatchlist(w);
+          setTrackPlate(prev => prev || (w.length > 0 ? w[0].plate_number : ''));
+        }
+        if (a) setAlerts(a);
+        if (d) setDetections(d);
         if (s) {
           setSummary({
-            total_cameras: s.total_cameras || c?.length || 5,
-            active_cameras: s.active_cameras || c?.filter((x: any) => x.is_active).length || 5,
-            watchlist_count: s.watchlist_count || w?.length || 3,
-            total_detections: s.total_detections || 14820,
-            unacknowledged_alerts: s.unacknowledged_alerts || a?.length || 2
+            total_cameras: s.total_cameras ?? (c ? c.length : 0),
+            active_cameras: s.active_cameras ?? (c ? c.filter((x: any) => x.is_active).length : 0),
+            watchlist_count: s.watchlist_count ?? (w ? w.length : 0),
+            total_detections: s.total_detections ?? (d ? d.length : 0),
+            unacknowledged_alerts: s.unacknowledged_alerts ?? (a ? a.filter((x: any) => !x.acknowledged).length : 0)
           });
         }
       }
@@ -323,35 +255,23 @@ export default function CommandCenter() {
   }, [loadData, addToast]);
 
   // Handlers
-  const handleSimulateAlert = async () => {
+  const handleSimulateAlert = async (overridePlate?: string) => {
     setIsSimulating(true);
-    addToast({ type: 'info', title: 'Triggering AI ANPR Pipeline…', msg: `Scanning plate ${trackPlate}` });
+    const targetPlate = (typeof overridePlate === 'string' && overridePlate) || trackPlate || (watchlist.length > 0 ? watchlist[0].plate_number : 'GJ01AB1234');
+    addToast({ type: 'info', title: 'Triggering AI ANPR Pipeline…', msg: `Scanning plate ${targetPlate}` });
     try {
-      const res = await triggerSimulatedSighting(trackPlate || 'GJ01AB1234');
+      const res = await triggerSimulatedSighting(targetPlate);
       await loadData();
       addToast({
         type: 'success',
         title: 'AI Intercept Broadcasted',
-        msg: `${trackPlate} spotted at ${res?.camera?.name || 'Ahmedabad Node'}`
+        msg: `${targetPlate} spotted at ${res?.camera?.name || 'CCTV Node'}`
       });
     } catch {
-      // Fallback in case backend is in simulation mode
-      const mockAlert: Alert = {
-        id: Date.now(),
-        plate_number: trackPlate || 'GJ01AB1234',
-        severity: 'CRITICAL',
-        category: 'stolen',
-        camera_name: 'Ahmedabad S.G. Highway Junction',
-        location_name: 'SG Highway, Ahmedabad',
-        timestamp: new Date().toISOString(),
-        acknowledged: false
-      };
-      setAlerts(prev => [mockAlert, ...prev]);
-      setSummary(prev => ({ ...prev, unacknowledged_alerts: prev.unacknowledged_alerts + 1 }));
       addToast({
-        type: 'success',
-        title: `AI Intercept Simulated: ${trackPlate}`,
-        msg: 'Target spotted at Ahmedabad S.G. Highway Junction'
+        type: 'warning',
+        title: 'Simulation Notice',
+        msg: 'Live backend ANPR pipeline did not return a response.'
       });
     } finally {
       setIsSimulating(false);
@@ -651,9 +571,16 @@ export default function CommandCenter() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
                       <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                        98.4%
+                        {detections.length > 0 
+                          ? `${Math.min(100, Math.round((detections.reduce((acc, d) => acc + (d.confidence || 0.95), 0) / detections.length) * 1000) / 10).toFixed(1)}%`
+                          : (summary.total_detections > 0 ? '98.4%' : '100.0%')}
                       </div>
-                      <SpeedometerGauge value={98} color="#10B981" />
+                      <SpeedometerGauge 
+                        value={detections.length > 0 
+                          ? Math.round((detections.reduce((acc, d) => acc + (d.confidence || 0.95), 0) / detections.length) * 100) 
+                          : 98} 
+                        color="#10B981" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -681,7 +608,10 @@ export default function CommandCenter() {
                       <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
                         {summary.active_cameras} <span style={{ fontSize: '1.1rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ {summary.total_cameras}</span>
                       </div>
-                      <SpeedometerGauge value={100} color="#F59E0B" />
+                      <SpeedometerGauge 
+                        value={summary.total_cameras > 0 ? Math.round((summary.active_cameras / summary.total_cameras) * 100) : 100} 
+                        color="#F59E0B" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -701,19 +631,22 @@ export default function CommandCenter() {
                         Highway Traffic Volume
                       </span>
                       <div style={{ display: 'flex', gap: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
-                        <span style={{ color: '#1D4ED8', background: '#DBEAFE', padding: '1px 6px', borderRadius: '4px' }}>● High Scan</span>
+                        <span style={{ color: '#1D4ED8', background: '#DBEAFE', padding: '1px 6px', borderRadius: '4px' }}>● Scanned</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
                       <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
                         {summary.total_detections.toLocaleString()}
                       </div>
-                      <SpeedometerGauge value={75} color="#3B82F6" />
+                      <SpeedometerGauge 
+                        value={summary.total_detections > 0 ? Math.min(100, Math.max(20, Math.round((summary.total_detections / 20000) * 100))) : 0} 
+                        color="#3B82F6" 
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Card 4: Weather Today & Jurisdiction Status (Sunset Coral Accent & Flash) */}
+                {/* Card 4: System Operational Status & Nodes (Sunset Coral Accent & Flash) */}
                 <div className="card-flash-coral" style={{
                   borderRadius: '20px',
                   display: 'flex',
@@ -724,22 +657,22 @@ export default function CommandCenter() {
                   <div style={{ height: '5px', background: 'linear-gradient(90deg, #F97316 0%, #EA580C 100%)', width: '100%' }} />
                   <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                      Weather today
+                      System Status
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '0.2rem' }}>
-                      <span style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
-                        31°C
+                      <span style={{ fontSize: '2.0rem', fontWeight: 900, color: 'var(--text-heading)', letterSpacing: '-0.02em' }}>
+                        {backendOnline ? 'OPERATIONAL' : 'LOCAL SYNC'}
                       </span>
-                      <span style={{ fontSize: '1.4rem' }}>⛅</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.6rem' }}>
                       <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        Ahmedabad City Hub
+                        {cameras[0]?.location_name || 'Gujarat Netram Grid'}
                       </span>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>‹</span>
-                        <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>6</span>
-                        <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)', cursor: 'pointer' }}>›</span>
+                        <span style={{ padding: '2px 7px', background: 'var(--bg-subtle)', borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>CCTV</span>
+                        <span style={{ padding: '2px 7px', background: '#10B981', color: '#FFFFFF', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          {summary.active_cameras}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -749,7 +682,7 @@ export default function CommandCenter() {
               {/* Row 2: Device Performance Bar Chart + Threat Classification Donut */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
                 <DevicePerformanceBarChart />
-                <ThreatDonutChart />
+                <ThreatDonutChart totalDetections={summary.total_detections} alertsCount={alerts.length} />
               </div>
 
               {/* Row 3: Hourly Traffic Flow + Intercept Alarms + Patrol Fleet Readiness */}
@@ -766,6 +699,8 @@ export default function CommandCenter() {
                   showThreshold={true}
                 />
                 <PatrolBatteryWidget
+                  activeUnitsCount={summary.active_cameras}
+                  readinessPct={summary.total_cameras > 0 ? Math.round((summary.active_cameras / summary.total_cameras) * 100) : 100}
                   onQuickDispatch={() => {
                     soundEffects.playDispatchConfirmed();
                     addToast({

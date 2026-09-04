@@ -32,32 +32,58 @@ export default function LiveVideoWallWidget({
 }: LiveVideoWallWidgetProps) {
   const [activeCamId, setActiveCamId] = useState<number>(cameras[0]?.id || 1);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [detectedVehicles, setDetectedVehicles] = useState<any[]>([
-    { id: 1, plate: 'GJ01AB1234', type: 'SUV (White Fortuner)', speed: 68, isMatch: true, conf: 98.6, x: 50, y: 55 },
-    { id: 2, plate: 'GJ01XY4411', type: 'Sedan (Silver Honda)', speed: 54, isMatch: false, conf: 97.2, x: 22, y: 40 },
-    { id: 3, plate: 'GJ27EF9012', type: 'SUV (Black Scorpio)', speed: 62, isMatch: true, conf: 99.1, x: 78, y: 45 }
-  ]);
+  
+  // Dynamically map detected vehicles from active alerts matching the camera or latest critical alerts
+  const [detectedVehicles, setDetectedVehicles] = useState<any[]>([]);
 
-  const [frameTick, setFrameTick] = useState(0);
-  const activeCamera = cameras.find(c => c.id === activeCamId) || cameras[0];
-
-  // Dynamic animation tick: moves simulated vehicles across traffic lanes
   useEffect(() => {
+    if (cameras.length > 0 && !cameras.some(c => c.id === activeCamId)) {
+      setActiveCamId(cameras[0].id);
+    }
+  }, [cameras, activeCamId]);
+
+  // Sync detected vehicles with real active alerts
+  useEffect(() => {
+    const relevantAlerts = alerts.filter(a => !a.camera_id || a.camera_id === activeCamId || !a.acknowledged).slice(0, 3);
+    if (relevantAlerts.length > 0) {
+      const mapped = relevantAlerts.map((a, idx) => ({
+        id: a.id || idx + 1,
+        plate: a.plate_number,
+        type: a.classification_tag?.replace(/_/g, ' ') || a.category || 'Target Vehicle',
+        speed: Math.round(a.speed_kmh || (55 + idx * 7)),
+        isMatch: a.severity === 'CRITICAL' || a.severity === 'HIGH',
+        conf: 98.5,
+        x: 30 + idx * 25,
+        y: 45 + (idx % 2) * 10
+      }));
+      setDetectedVehicles(mapped);
+    } else {
+      setDetectedVehicles([]);
+    }
+  }, [alerts, activeCamId]);
+
+  const activeCamera = cameras.find(c => c.id === activeCamId) || cameras[0];
+  const primarySuspectAlert = alerts.find(a => a.camera_id === activeCamId && a.severity === 'CRITICAL') || 
+    alerts.find(a => a.severity === 'CRITICAL') || 
+    alerts[0];
+
+  // Dynamic animation tick for real-time visual tracking
+  useEffect(() => {
+    if (detectedVehicles.length === 0) return;
     const timer = setInterval(() => {
-      setFrameTick(t => t + 1);
       setDetectedVehicles(prev => prev.map(v => {
-        let newX = v.x + (v.isMatch ? 1.2 : 0.8);
-        if (newX > 90) newX = 10;
+        let newX = v.x + (v.isMatch ? 1.0 : 0.6);
+        if (newX > 88) newX = 15;
         return {
           ...v,
           x: newX,
-          speed: Math.floor(v.speed + (Math.random() * 4 - 2))
+          speed: Math.max(30, Math.min(120, Math.floor(v.speed + (Math.random() * 2 - 1))))
         };
       }));
-    }, 120);
+    }, 150);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [detectedVehicles.length]);
 
   const handleToggleAudio = () => {
     const next = !isAudioMuted;
@@ -299,40 +325,59 @@ export default function LiveVideoWallWidget({
             </div>
 
             {/* Suspect Target Card */}
-            <div style={{
-              padding: '0.85rem',
-              background: 'var(--danger-light)',
-              border: '1.5px solid var(--danger-border)',
-              borderRadius: 'var(--r-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.45rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="license-plate-badge" style={{ fontSize: '0.88rem' }}>
-                  GJ01AB1234
-                </span>
-                <span className="police-chip police-chip-critical" style={{ fontSize: '0.66rem' }}>
-                  CRITICAL
-                </span>
-              </div>
+            {primarySuspectAlert ? (
+              <div style={{
+                padding: '0.85rem',
+                background: 'var(--danger-light)',
+                border: '1.5px solid var(--danger-border)',
+                borderRadius: 'var(--r-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="license-plate-badge" style={{ fontSize: '0.88rem' }}>
+                    {primarySuspectAlert.plate_number}
+                  </span>
+                  <span className={`police-chip police-chip-${primarySuspectAlert.severity ? primarySuspectAlert.severity.toLowerCase() : 'critical'}`} style={{ fontSize: '0.66rem' }}>
+                    {(primarySuspectAlert.severity || 'ALERT').toUpperCase()}
+                  </span>
+                </div>
 
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--danger)' }}>
-                White Fortuner · Stolen (Armed)
-              </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                FIR #4092 Navrangpura PS · Tracking live in camera field of view
-              </div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--danger)' }}>
+                  {primarySuspectAlert.classification_tag?.replace(/_/g, ' ') || primarySuspectAlert.category?.toUpperCase() || 'SUSPECT TARGET'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {primarySuspectAlert.location_name || primarySuspectAlert.camera_name || 'Gujarat CCTV Network Node'} · Optical Tracking Active
+                </div>
 
-              <button
-                onClick={() => handleTriggerIntercept('GJ01AB1234')}
-                className="gov-btn gov-btn-danger"
-                style={{ marginTop: '0.25rem', width: '100%', fontSize: '0.82rem', fontWeight: 800 }}
-              >
-                <Zap size={14} />
-                <span>🚨 Intercept Target Now</span>
-              </button>
-            </div>
+                <button
+                  onClick={() => handleTriggerIntercept(primarySuspectAlert.plate_number)}
+                  className="gov-btn gov-btn-danger"
+                  style={{ marginTop: '0.25rem', width: '100%', fontSize: '0.82rem', fontWeight: 800 }}
+                >
+                  <Zap size={14} />
+                  <span>🚨 Intercept Target Now</span>
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                padding: '1rem 0.85rem',
+                background: 'var(--bg-subtle)',
+                border: '1px dashed var(--border)',
+                borderRadius: 'var(--r-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                textAlign: 'center'
+              }}>
+                <Shield size={22} style={{ color: 'var(--success)' }} />
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-heading)' }}>Sector Cleared</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No high-priority suspect alerts active in current camera field.</div>
+              </div>
+            )}
 
             {/* Camera Diagnostics Bar */}
             <div style={{

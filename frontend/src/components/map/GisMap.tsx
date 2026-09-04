@@ -55,123 +55,10 @@ const TILE_LAYERS = {
   }
 };
 
-// Default Gujarat Police State Checkpoints for Immediate Live Demonstration
-const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
-  plate_number: 'GJ01AB1234',
-  category: 'stolen',
-  priority: 'CRITICAL',
-  vehicle_make_model: 'White Fortuner SUV',
-  checkpoints_count: 5,
-  total_distance_km: 18.6,
-  average_velocity_kmh: 68.2,
-  cloned_plate_anomaly: false,
-  checkpoints: [
-    {
-      camera_id: 1,
-      camera_name: 'Chimanbhai Bridge Junction',
-      location_name: 'Subhash Bridge - RTO, Ahmedabad',
-      latitude: 23.0645,
-      longitude: 72.5780,
-      timestamp: '2026-09-03T10:00:00.000Z',
-      confidence: 0.985,
-      speed_kmh: 58.0,
-      speed_category: 'MODERATE',
-      vehicle_color: 'White',
-      vehicle_type: 'SUV',
-      matched: true
-    },
-    {
-      camera_id: 2,
-      camera_name: 'Janpath Hotel Circle',
-      location_name: 'Ashram Road Corridor, Ahmedabad',
-      latitude: 23.0531,
-      longitude: 72.5694,
-      timestamp: '2026-09-03T10:14:00.000Z',
-      confidence: 0.978,
-      speed_kmh: 62.5,
-      speed_category: 'MODERATE',
-      vehicle_color: 'White',
-      vehicle_type: 'SUV',
-      matched: true
-    },
-    {
-      camera_id: 3,
-      camera_name: 'O.N.G.C. Chandkheda Circle',
-      location_name: 'Gandhinagar-Ahmedabad Highway',
-      latitude: 23.1025,
-      longitude: 72.5935,
-      timestamp: '2026-09-03T10:28:00.000Z',
-      confidence: 0.991,
-      speed_kmh: 76.0,
-      speed_category: 'MODERATE',
-      vehicle_color: 'White',
-      vehicle_type: 'SUV',
-      matched: true
-    },
-    {
-      camera_id: 4,
-      camera_name: 'Paldi Crossroad Circle',
-      location_name: 'Paldi, Central Ahmedabad',
-      latitude: 23.0135,
-      longitude: 72.5620,
-      timestamp: '2026-09-03T10:42:00.000Z',
-      confidence: 0.965,
-      speed_kmh: 54.0,
-      speed_category: 'NORMAL',
-      vehicle_color: 'White',
-      vehicle_type: 'SUV',
-      matched: true
-    },
-    {
-      camera_id: 5,
-      camera_name: 'Ahmedabad S.G. Highway Junction',
-      location_name: 'S.G. Highway Express, Ahmedabad',
-      latitude: 23.0338,
-      longitude: 72.5085,
-      timestamp: '2026-09-03T10:55:00.000Z',
-      confidence: 0.989,
-      speed_kmh: 84.5,
-      speed_category: 'OVERSPEEDING',
-      vehicle_color: 'White',
-      vehicle_type: 'SUV',
-      matched: true
-    }
-  ]
-};
-
-const DEFAULT_PREDICTED_JUNCTIONS: PredictedJunction[] = [
-  {
-    rank: 1,
-    junction_id: 'j_sarkhej',
-    junction_name: 'Sarkhej-Sanand Toll Crossroad',
-    location_name: 'Sarkhej NH-47 Bypass, Ahmedabad',
-    latitude: 22.9862,
-    longitude: 72.4984,
-    distance_km: 5.4,
-    estimated_speed_kmh: 84.5,
-    eta_minutes: 3.8,
-    confidence_score: 0.92,
-    tactical_advisory: 'Deploy tire-shredding spike strips & activate signal lock (Barricade Alpha)'
-  },
-  {
-    rank: 2,
-    junction_id: 'j_vadsar',
-    junction_name: 'Vadodara Vadsar Circle',
-    location_name: 'Vadsar Ring Road, Vadodara',
-    latitude: 22.2950,
-    longitude: 73.1740,
-    distance_km: 98.2,
-    estimated_speed_kmh: 84.5,
-    eta_minutes: 69.7,
-    confidence_score: 0.81,
-    tactical_advisory: 'Station Highway Interceptor Unit & alert Vadodara CP (Barricade Bravo)'
-  }
-];
-
 export default function GisMap({
   cameras,
   alerts,
-  initialPlate = 'GJ01AB1234',
+  initialPlate = '',
   onSelectPlate,
   onOpenDossier,
   onOpenDispatch
@@ -189,8 +76,8 @@ export default function GisMap({
   const [isMapReady, setIsMapReady] = useState(false);
   const [activeTileType, setActiveTileType] = useState<'streets' | 'satellite' | 'gray'>('streets');
   const [searchPlate, setSearchPlate] = useState(initialPlate);
-  const [routeData, setRouteData] = useState<VehicleRouteResponse>(DEFAULT_GUJARAT_ROUTE);
-  const [predictedJunctions, setPredictedJunctions] = useState<PredictedJunction[]>(DEFAULT_PREDICTED_JUNCTIONS);
+  const [routeData, setRouteData] = useState<VehicleRouteResponse | null>(null);
+  const [predictedJunctions, setPredictedJunctions] = useState<PredictedJunction[]>([]);
   const [pcrUnits, setPcrUnits] = useState<PatrolUnit[]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
 
@@ -293,7 +180,17 @@ export default function GisMap({
       if (rData?.checkpoints?.length) {
         setRouteData(rData);
       } else {
-        setRouteData({ ...DEFAULT_GUJARAT_ROUTE, plate_number: p });
+        setRouteData(rData || {
+          plate_number: p,
+          category: 'suspect',
+          priority: 'NORMAL',
+          vehicle_make_model: 'Target Vehicle',
+          checkpoints_count: 0,
+          total_distance_km: 0,
+          average_velocity_kmh: 0,
+          cloned_plate_anomaly: false,
+          checkpoints: []
+        });
       }
 
       // 2. Fetch predictive interception intelligence
@@ -301,18 +198,36 @@ export default function GisMap({
         const interceptData = await getPredictiveIntercept(p);
         if (interceptData?.predicted_intercept_junctions?.length) {
           setPredictedJunctions(interceptData.predicted_intercept_junctions);
+        } else {
+          setPredictedJunctions([]);
         }
         if (interceptData?.nearest_pcr_units?.length) {
           setPcrUnits(interceptData.nearest_pcr_units);
+        } else {
+          setPcrUnits([]);
         }
       } catch (err) {
         console.warn("Could not fetch predictive intercept data:", err);
+        setPredictedJunctions([]);
+        setPcrUnits([]);
       }
 
       if (onSelectPlate) onSelectPlate(p);
       soundEffects.playRadioChirp();
     } catch {
-      setRouteData({ ...DEFAULT_GUJARAT_ROUTE, plate_number: p });
+      setRouteData({
+        plate_number: p,
+        category: 'suspect',
+        priority: 'NORMAL',
+        vehicle_make_model: 'Target Vehicle',
+        checkpoints_count: 0,
+        total_distance_km: 0,
+        average_velocity_kmh: 0,
+        cloned_plate_anomaly: false,
+        checkpoints: []
+      });
+      setPredictedJunctions([]);
+      setPcrUnits([]);
     } finally {
       setIsLoadingRoute(false);
     }
@@ -334,15 +249,7 @@ export default function GisMap({
     coverageCirclesRef.current.forEach(c => c.remove());
     coverageCirclesRef.current = [];
 
-    const activeCamsList = cameras.length > 0 ? cameras : [
-      { id: 1, name: 'Chimanbhai Bridge Junction', location_name: 'Subhash Bridge - RTO, Ahmedabad', latitude: 23.0645, longitude: 72.5780, is_active: true, vendor: 'Hikvision', protocol: 'RTSP', stream_url: '' },
-      { id: 2, name: 'Janpath Hotel Circle', location_name: 'Ashram Road Corridor, Ahmedabad', latitude: 23.0531, longitude: 72.5694, is_active: true, vendor: 'CP Plus', protocol: 'RTSP', stream_url: '' },
-      { id: 3, name: 'O.N.G.C. Chandkheda Circle', location_name: 'Gandhinagar-Ahmedabad Highway', latitude: 23.1025, longitude: 72.5935, is_active: true, vendor: 'Dahua', protocol: 'RTSP', stream_url: '' },
-      { id: 4, name: 'Paldi Crossroad Circle', location_name: 'Paldi, Central Ahmedabad', latitude: 23.0135, longitude: 72.5620, is_active: true, vendor: 'Honeywell', protocol: 'RTSP', stream_url: '' },
-      { id: 5, name: 'Ahmedabad S.G. Highway Junction', location_name: 'SG Highway, Ahmedabad', latitude: 23.0338, longitude: 72.5085, is_active: true, vendor: 'Hikvision', protocol: 'RTSP', stream_url: '' }
-    ];
-
-    activeCamsList.forEach(cam => {
+    cameras.forEach(cam => {
       if (!cam.latitude || !cam.longitude) return;
 
       const hasAlert = alerts.some(a => a.camera_id === cam.id);
@@ -418,8 +325,7 @@ export default function GisMap({
     routePolylinesRef.current.forEach(p => p.remove());
     routePolylinesRef.current = [];
 
-    const currentRoute = routeData || DEFAULT_GUJARAT_ROUTE;
-    const checkpoints = currentRoute.checkpoints.filter(cp => cp.latitude && cp.longitude);
+    const checkpoints = (routeData?.checkpoints || []).filter(cp => cp.latitude && cp.longitude);
     if (checkpoints.length < 2) return;
 
     // Segmented polylines with speed-based color coding
@@ -521,8 +427,7 @@ export default function GisMap({
 
     if (!showPredictedIntercept || !predictedJunctions?.length) return;
 
-    const currentRoute = routeData || DEFAULT_GUJARAT_ROUTE;
-    const checkpoints = currentRoute.checkpoints.filter(cp => cp.latitude && cp.longitude);
+    const checkpoints = (routeData?.checkpoints || []).filter(cp => cp.latitude && cp.longitude);
     if (checkpoints.length === 0) return;
 
     const lastCp = checkpoints[checkpoints.length - 1];
@@ -616,15 +521,9 @@ export default function GisMap({
     pcrMarkersRef.current.forEach(m => m.remove());
     pcrMarkersRef.current = [];
 
-    if (!showPcrUnits) return;
+    if (!showPcrUnits || !pcrUnits.length) return;
 
-    const unitsToRender = pcrUnits.length > 0 ? pcrUnits : [
-      { id: 'pcr-1', name: 'PCR Van #14 (Crime Branch)', callsign: 'Falcon-14', officer: 'PSI R. Dave', latitude: 23.0380, longitude: 72.5190, distance_km: 1.8, eta_minutes: 2, status: 'AVAILABLE', type: 'VAN' },
-      { id: 'pcr-2', name: 'Cheetah Mobile QRT #08', callsign: 'Cheetah-8', officer: 'HC M. Solanki', latitude: 23.0450, longitude: 72.5350, distance_km: 2.4, eta_minutes: 3, status: 'PATROLLING', type: 'BIKE' },
-      { id: 'pcr-3', name: 'Sector Roadblock Barrier #03', callsign: 'Barrier-3', officer: 'ASI B. Vaghela', latitude: 23.0280, longitude: 72.5050, distance_km: 1.2, eta_minutes: 2, status: 'STANDBY', type: 'CHECKPOST' }
-    ];
-
-    unitsToRender.forEach(unit => {
+    pcrUnits.forEach(unit => {
       const pcrHtml = `
         <div style="
           width: 32px;
@@ -672,8 +571,7 @@ export default function GisMap({
   useEffect(() => {
     if (!isPlaying || !mapInstanceRef.current || !L) return;
 
-    const currentRoute = routeData || DEFAULT_GUJARAT_ROUTE;
-    const checkpoints = currentRoute.checkpoints.filter(cp => cp.latitude && cp.longitude);
+    const checkpoints = (routeData?.checkpoints || []).filter(cp => cp.latitude && cp.longitude);
     if (checkpoints.length < 2) return;
 
     const intervalMs = 2200 / playbackSpeed;
@@ -923,7 +821,7 @@ export default function GisMap({
                   Predictive Escape Route & Junction Interception
                 </span>
                 <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                  Heading projection based on corridor velocity (<strong>{routeData.average_velocity_kmh || 68} km/h</strong>)
+                  Heading projection based on corridor velocity (<strong>{routeData?.average_velocity_kmh || 60} km/h</strong>)
                 </span>
               </div>
             </div>
@@ -998,180 +896,191 @@ export default function GisMap({
       )}
 
       {/* ── Route Playback Scrubber ── */}
-      <div className="gov-card" style={{ padding: '0.85rem 1.15rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              background: 'var(--primary-light)',
-              color: 'var(--primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Car size={16} />
+      {routeData && routeData.checkpoints?.length > 0 ? (
+        <div className="gov-card" style={{ padding: '0.85rem 1.15rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '6px',
+                background: 'var(--primary-light)',
+                color: 'var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Car size={16} />
+              </div>
+              <div>
+                <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-heading)' }}>
+                  Sequential Movement Scrubber & Timeline
+                </span>
+                <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                  Suspect: <strong className="license-plate-badge" style={{ padding: '1px 6px', fontSize: '0.78rem' }}>{routeData?.plate_number}</strong>
+                  {routeData.cloned_plate_anomaly && (
+                    <span style={{ marginLeft: '6px', color: '#DC2626', fontWeight: 800 }}>⚠️ GHOST/CLONED ANOMALY</span>
+                  )}
+                </span>
+              </div>
             </div>
-            <div>
-              <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-heading)' }}>
-                Sequential Movement Scrubber & Timeline
-              </span>
-              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                Suspect: <strong className="license-plate-badge" style={{ padding: '1px 6px', fontSize: '0.78rem' }}>{routeData?.plate_number}</strong>
-                {routeData.cloned_plate_anomaly && (
-                  <span style={{ marginLeft: '6px', color: '#DC2626', fontWeight: 800 }}>⚠️ GHOST/CLONED ANOMALY</span>
-                )}
-              </span>
-            </div>
-          </div>
 
-          {/* Controls & Speed */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <button
-              onClick={() => {
-                if (playbackIndex >= (routeData.checkpoints.length - 1)) {
-                  setPlaybackIndex(0);
-                }
-                setIsPlaying(!isPlaying);
-              }}
-              className="gov-btn gov-btn-primary gov-btn-sm"
-            >
-              {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-              <span>{isPlaying ? 'Pause' : 'Play Trajectory'}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setIsPlaying(false);
-                setPlaybackIndex(0);
-                if (movingVehicleMarkerRef.current) {
-                  movingVehicleMarkerRef.current.remove();
-                  movingVehicleMarkerRef.current = null;
-                }
-              }}
-              className="gov-btn gov-btn-outline gov-btn-sm"
-              title="Reset"
-            >
-              <RotateCcw size={13} />
-            </button>
-
-            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
-              {([1, 2, 4] as const).map(spd => (
-                <button
-                  key={spd}
-                  onClick={() => setPlaybackSpeed(spd)}
-                  style={{
-                    padding: '0.2rem 0.55rem',
-                    background: playbackSpeed === spd ? 'var(--primary)' : 'var(--bg-card)',
-                    color: playbackSpeed === spd ? '#FFFFFF' : 'var(--text-muted)',
-                    border: 'none',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {spd}x
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline Slider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-mono)' }}>
-            CP {playbackIndex + 1}/{routeData.checkpoints.length}
-          </span>
-
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, routeData.checkpoints.length - 1)}
-            value={playbackIndex}
-            onChange={e => {
-              const idx = parseInt(e.target.value);
-              setPlaybackIndex(idx);
-              const cp = routeData.checkpoints[idx];
-              if (cp && mapInstanceRef.current) {
-                mapInstanceRef.current.panTo([cp.latitude, cp.longitude], { animate: true });
-              }
-            }}
-            style={{ flex: 1, cursor: 'pointer' }}
-          />
-
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-heading)', fontWeight: 700 }}>
-            {routeData.checkpoints[playbackIndex]?.location_name}
-          </span>
-        </div>
-
-        {/* Checkpoint Timeline Cards with Speeds */}
-        <div style={{
-          display: 'flex',
-          gap: '0.55rem',
-          overflowX: 'auto',
-          paddingTop: '0.65rem',
-          marginTop: '0.65rem',
-          borderTop: '1px solid var(--border)'
-        }}>
-          {routeData.checkpoints.map((cp, idx) => {
-            const isActive = playbackIndex === idx;
-            const spd = cp.corridor_velocity_kmh || cp.speed_kmh || 58;
-            const spdColor = spd > 80 ? '#DC2626' : spd > 55 ? '#D97706' : '#16A34A';
-
-            return (
-              <div
-                key={idx}
+            {/* Controls & Speed */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <button
                 onClick={() => {
-                  setPlaybackIndex(idx);
-                  if (mapInstanceRef.current) {
-                    mapInstanceRef.current.panTo([cp.latitude, cp.longitude], { animate: true });
+                  if (playbackIndex >= (routeData.checkpoints.length - 1)) {
+                    setPlaybackIndex(0);
+                  }
+                  setIsPlaying(!isPlaying);
+                }}
+                className="gov-btn gov-btn-primary gov-btn-sm"
+              >
+                {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+                <span>{isPlaying ? 'Pause' : 'Play Trajectory'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsPlaying(false);
+                  setPlaybackIndex(0);
+                  if (movingVehicleMarkerRef.current) {
+                    movingVehicleMarkerRef.current.remove();
+                    movingVehicleMarkerRef.current = null;
                   }
                 }}
-                style={{
-                  minWidth: '170px',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: 'var(--r-md)',
-                  background: isActive ? 'var(--primary-light)' : 'var(--bg-subtle)',
-                  border: '1.5px solid',
-                  borderColor: isActive ? 'var(--primary)' : 'var(--border)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
+                className="gov-btn gov-btn-outline gov-btn-sm"
+                title="Reset"
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <span style={{
-                    fontSize: '0.66rem',
-                    fontWeight: 800,
-                    color: isActive ? 'var(--primary)' : 'var(--text-dim)',
-                    textTransform: 'uppercase'
-                  }}>
-                    CP #{idx + 1}
-                  </span>
-                  <span style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    color: spdColor,
-                    fontFamily: 'var(--font-mono)'
-                  }}>
-                    ⚡ {spd.toFixed(0)} km/h
-                  </span>
-                </div>
-                <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-heading)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {cp.location_name}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }} suppressHydrationWarning>
-                  🕒 {new Date(cp.timestamp).toLocaleTimeString('en-IN')}
-                </div>
+                <RotateCcw size={13} />
+              </button>
+
+              <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                {([1, 2, 4] as const).map(spd => (
+                  <button
+                    key={spd}
+                    onClick={() => setPlaybackSpeed(spd)}
+                    style={{
+                      padding: '0.2rem 0.55rem',
+                      background: playbackSpeed === spd ? 'var(--primary)' : 'var(--bg-card)',
+                      color: playbackSpeed === spd ? '#FFFFFF' : 'var(--text-muted)',
+                      border: 'none',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {spd}x
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Timeline Slider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-mono)' }}>
+              CP {playbackIndex + 1}/{routeData.checkpoints.length}
+            </span>
+
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, routeData.checkpoints.length - 1)}
+              value={playbackIndex}
+              onChange={e => {
+                const idx = parseInt(e.target.value);
+                setPlaybackIndex(idx);
+                const cp = routeData.checkpoints[idx];
+                if (cp && mapInstanceRef.current) {
+                  mapInstanceRef.current.panTo([cp.latitude, cp.longitude], { animate: true });
+                }
+              }}
+              style={{ flex: 1, cursor: 'pointer' }}
+            />
+
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-heading)', fontWeight: 700 }}>
+              {routeData.checkpoints[playbackIndex]?.location_name}
+            </span>
+          </div>
+
+          {/* Checkpoint Timeline Cards with Speeds */}
+          <div style={{
+            display: 'flex',
+            gap: '0.55rem',
+            overflowX: 'auto',
+            paddingTop: '0.65rem',
+            marginTop: '0.65rem',
+            borderTop: '1px solid var(--border)'
+          }}>
+            {routeData.checkpoints.map((cp, idx) => {
+              const isActive = playbackIndex === idx;
+              const spd = cp.corridor_velocity_kmh || cp.speed_kmh || 58;
+              const spdColor = spd > 80 ? '#DC2626' : spd > 55 ? '#D97706' : '#16A34A';
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setPlaybackIndex(idx);
+                    if (mapInstanceRef.current) {
+                      mapInstanceRef.current.panTo([cp.latitude, cp.longitude], { animate: true });
+                    }
+                  }}
+                  style={{
+                    minWidth: '170px',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: 'var(--r-md)',
+                    background: isActive ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                    border: '1.5px solid',
+                    borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <span style={{
+                      fontSize: '0.66rem',
+                      fontWeight: 800,
+                      color: isActive ? 'var(--primary)' : 'var(--text-dim)',
+                      textTransform: 'uppercase'
+                    }}>
+                      CP #{idx + 1}
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      color: spdColor,
+                      fontFamily: 'var(--font-mono)'
+                    }}>
+                      ⚡ {spd.toFixed(0)} km/h
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-heading)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {cp.location_name}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }} suppressHydrationWarning>
+                    🕒 {new Date(cp.timestamp).toLocaleTimeString('en-IN')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="gov-card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-heading)' }}>
+            {searchPlate ? `No live trajectory sightings recorded yet for plate ${searchPlate}` : 'Enter a license plate or select an alert to trace highway trajectory'}
+          </div>
+          <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+            Historical checkpoint breadcrumbs will plot automatically upon ANPR camera sighting.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
