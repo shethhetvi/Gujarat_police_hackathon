@@ -59,7 +59,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
   const [focusedQuadrant, setFocusedQuadrant] = useState<number>(0);
 
   // Suspect Vehicle Cross-Camera Intercept State
-  const [targetPlate, setTargetPlate] = useState<string>('GJ01AB1234');
+  const [targetPlate, setTargetPlate] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [syncAnalysisResult, setSyncAnalysisResult] = useState<any>(null);
 
@@ -140,8 +140,8 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
       }),
       correlation_telemetry: syncAnalysisResult?.correlation || {
         status: "Real-time Live Sync Synchronized",
-        speed_estimate_kmh: 65.8,
-        trajectory: "Correlated across SG Highway arterial corridor"
+        speed_estimate_kmh: 0,
+        trajectory: targetPlate ? `Tracked across optical nodes for ${targetPlate}` : "Surveillance Grid Standby"
       }
     };
 
@@ -412,7 +412,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
                 type="text"
                 value={targetPlate}
                 onChange={e => setTargetPlate(e.target.value.toUpperCase())}
-                placeholder="TARGET PLATE (e.g. GJ01AB1234)"
+                placeholder="TARGET PLATE (e.g. GJ01AA0001)"
                 style={{
                   padding: '6px 12px',
                   borderRadius: '6px',
@@ -428,22 +428,24 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
               />
             </div>
 
-            {/* Quick target presets */}
-            <button
-              onClick={() => setTargetPlate('GJ01AB1234')}
-              style={{
-                padding: '4px 8px',
-                borderRadius: '4px',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                background: 'rgba(239, 68, 68, 0.1)',
-                color: '#F87171',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              🎯 Stolen Fortuner (GJ01AB1234)
-            </button>
+            {/* Clear filter button if plate active */}
+            {targetPlate && (
+              <button
+                onClick={() => setTargetPlate('')}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(148, 163, 184, 0.4)',
+                  background: 'rgba(148, 163, 184, 0.1)',
+                  color: '#94A3B8',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                ✕ Clear
+              </button>
+            )}
 
             <button
               onClick={handleRunMultiCameraSync}

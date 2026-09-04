@@ -57,10 +57,10 @@ const TILE_LAYERS = {
 
 // Default Gujarat Police State Checkpoints for Immediate Live Demonstration
 const DEFAULT_GUJARAT_ROUTE: VehicleRouteResponse = {
-  plate_number: 'GJ01AB1234',
-  category: 'stolen',
-  priority: 'CRITICAL',
-  vehicle_make_model: 'White Fortuner SUV',
+  plate_number: '',
+  category: 'surveillance',
+  priority: 'HIGH',
+  vehicle_make_model: 'Target Vehicle',
   checkpoints_count: 5,
   total_distance_km: 18.6,
   average_velocity_kmh: 68.2,
@@ -171,7 +171,7 @@ const DEFAULT_PREDICTED_JUNCTIONS: PredictedJunction[] = [
 export default function GisMap({
   cameras,
   alerts,
-  initialPlate = 'GJ01AB1234',
+  initialPlate = '',
   onSelectPlate,
   onOpenDossier,
   onOpenDispatch
@@ -748,7 +748,7 @@ export default function GisMap({
                   textTransform: 'uppercase',
                   height: '34px'
                 }}
-                placeholder="GJ01AB1234"
+                placeholder="SEARCH VEHICLE PLATE"
                 value={searchPlate}
                 onChange={e => setSearchPlate(e.target.value.toUpperCase())}
                 onKeyDown={e => e.key === 'Enter' && handleTraceRoute(searchPlate)}

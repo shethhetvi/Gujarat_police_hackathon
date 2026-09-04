@@ -33,9 +33,9 @@ export default function LiveVideoWallWidget({
   const [activeCamId, setActiveCamId] = useState<number>(cameras[0]?.id || 1);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [detectedVehicles, setDetectedVehicles] = useState<any[]>([
-    { id: 1, plate: 'GJ01AB1234', type: 'SUV (White Fortuner)', speed: 68, isMatch: true, conf: 98.6, x: 50, y: 55 },
-    { id: 2, plate: 'GJ01XY4411', type: 'Sedan (Silver Honda)', speed: 54, isMatch: false, conf: 97.2, x: 22, y: 40 },
-    { id: 3, plate: 'GJ27EF9012', type: 'SUV (Black Scorpio)', speed: 62, isMatch: true, conf: 99.1, x: 78, y: 45 }
+    { id: 1, plate: alerts[0]?.plate_number || 'GJ01TA5521', type: 'SUV', speed: 68, isMatch: Boolean(alerts[0]), conf: 98.6, x: 50, y: 55 },
+    { id: 2, plate: 'GJ05MV3310', type: 'Sedan', speed: 54, isMatch: false, conf: 97.2, x: 22, y: 40 },
+    { id: 3, plate: alerts[1]?.plate_number || 'GJ27BR8892', type: 'Commercial', speed: 62, isMatch: Boolean(alerts[1]), conf: 99.1, x: 78, y: 45 }
   ]);
 
   const [frameTick, setFrameTick] = useState(0);
@@ -299,40 +299,54 @@ export default function LiveVideoWallWidget({
             </div>
 
             {/* Suspect Target Card */}
-            <div style={{
-              padding: '0.85rem',
-              background: 'var(--danger-light)',
-              border: '1.5px solid var(--danger-border)',
-              borderRadius: 'var(--r-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.45rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="license-plate-badge" style={{ fontSize: '0.88rem' }}>
-                  GJ01AB1234
-                </span>
-                <span className="police-chip police-chip-critical" style={{ fontSize: '0.66rem' }}>
-                  CRITICAL
-                </span>
-              </div>
+            {(() => {
+              const primaryAlert = alerts.length > 0 ? alerts[0] : null;
+              const matchedVeh = detectedVehicles.find(v => v.isMatch);
+              const targetPlate = primaryAlert?.plate_number || matchedVeh?.plate || null;
+              const targetSeverity = primaryAlert?.severity || (matchedVeh ? 'HIGH' : 'NORMAL');
+              const targetDesc = primaryAlert
+                ? `${primaryAlert.classification_tag || 'SUSPECT'} · ${primaryAlert.location_name || activeCamera?.location_name || 'In camera field of view'}`
+                : (matchedVeh ? `${matchedVeh.type} · Surveillance Target` : 'Optical detection buffer active');
 
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--danger)' }}>
-                White Fortuner · Stolen (Armed)
-              </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                FIR #4092 Navrangpura PS · Tracking live in camera field of view
-              </div>
+              return (
+                <div style={{
+                  padding: '0.85rem',
+                  background: targetPlate ? 'var(--danger-light)' : 'var(--bg-subtle)',
+                  border: `1.5px solid ${targetPlate ? 'var(--danger-border)' : 'var(--border)'}`,
+                  borderRadius: 'var(--r-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.45rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="license-plate-badge" style={{ fontSize: '0.88rem' }}>
+                      {targetPlate || 'OPTICAL SCAN'}
+                    </span>
+                    <span className={`police-chip police-chip-${targetSeverity.toLowerCase()}`} style={{ fontSize: '0.66rem' }}>
+                      {targetSeverity}
+                    </span>
+                  </div>
 
-              <button
-                onClick={() => handleTriggerIntercept('GJ01AB1234')}
-                className="gov-btn gov-btn-danger"
-                style={{ marginTop: '0.25rem', width: '100%', fontSize: '0.82rem', fontWeight: 800 }}
-              >
-                <Zap size={14} />
-                <span>🚨 Intercept Target Now</span>
-              </button>
-            </div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: targetPlate ? 'var(--danger)' : 'var(--text-primary)' }}>
+                    {targetPlate ? (primaryAlert ? `Target Intercept Alert: ${targetPlate}` : matchedVeh?.type) : 'All Camera Feeds Monitored'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    {targetDesc}
+                  </div>
+
+                  {targetPlate && (
+                    <button
+                      onClick={() => handleTriggerIntercept(targetPlate)}
+                      className="gov-btn gov-btn-danger"
+                      style={{ marginTop: '0.25rem', width: '100%', fontSize: '0.82rem', fontWeight: 800 }}
+                    >
+                      <Zap size={14} />
+                      <span>🚨 Intercept Target ({targetPlate})</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Camera Diagnostics Bar */}
             <div style={{

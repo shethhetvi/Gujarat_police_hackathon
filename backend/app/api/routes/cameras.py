@@ -187,7 +187,7 @@ from pydantic import BaseModel
 
 class MultiSyncPayload(BaseModel):
     camera_ids: List[int]
-    plate_number: Optional[str] = "GJ01AB1234"
+    plate_number: Optional[str] = None
     source_mode: Optional[str] = "auto"
     sim_timestamp: Optional[str] = None
 
@@ -204,7 +204,10 @@ async def run_multi_camera_sync(
     - Cross-correlates suspect sightings across junctions with PTS timestamps
     - Calculates transit interval, inter-camera velocity, and trajectory verification
     """
-    target_plate = "".join(c for c in (payload.plate_number or "GJ01AB1234") if c.isalnum()).upper()
+    target_plate = "".join(c for c in (payload.plate_number or "") if c.isalnum()).upper()
+    if not target_plate:
+        first_wl = db.query(WatchlistEntry).filter(WatchlistEntry.is_active == True).first()
+        target_plate = first_wl.plate_number if first_wl else ""
     channel_results = []
     sightings = []
 

@@ -343,8 +343,8 @@ export default function SmartAnalytics({
             <div style={{ display: 'flex', gap: '1.25rem', zIndex: 4 }}>
               {[0, 1, 2].map(idx => {
                 const captured = latestShootResults[idx];
-                const plate = captured?.plate_number || (idx === 0 ? 'GJ01AB1234' : idx === 1 ? 'GJ05CD5678' : 'GJ27EF9012');
-                const isMatched = captured?.matched || idx === 0;
+                const plate = captured?.plate_number || alerts[idx]?.plate_number || `GJ0${idx + 1}TR${1000 + (idx + 1) * 1234}`;
+                const isMatched = captured ? captured.matched : (alerts.length > 0 && idx === 0);
 
                 return (
                   <div

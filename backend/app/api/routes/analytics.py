@@ -157,10 +157,16 @@ def get_evidence_dossier(plate_number: str, db: Session = Depends(get_db)) -> Di
     import hashlib
     master_sha256 = hashlib.sha256(raw_evidence_str.encode("utf-8")).hexdigest()
 
+    case_reference = (
+        wl_entry.description.split(" - ")[0]
+        if wl_entry and wl_entry.description and "FIR" in wl_entry.description
+        else (f"FIR-{wl_entry.id}/2026/POLICE-HQ" if wl_entry else f"REF-{clean_target}-2026")
+    )
+
     return {
         "dossier_type": "GUJARAT_POLICE_SECTION_65B_EVIDENCE_DOSSIER",
         "statutory_act": "Section 65B(4) of the Indian Evidence Act, 1872 / Bharatiya Sakshya Adhiniyam, 2023",
-        "case_reference": f"FIR-4092/2026/CYBER-CRIME",
+        "case_reference": case_reference,
         "plate_number": clean_target,
         "master_sha256_hash": master_sha256,
         "generated_at": datetime.datetime.now().isoformat(),
@@ -169,8 +175,8 @@ def get_evidence_dossier(plate_number: str, db: Session = Depends(get_db)) -> Di
             "plate_number": clean_target,
             "category": wl_entry.category if wl_entry else "suspect",
             "priority": wl_entry.priority if wl_entry else "CRITICAL",
-            "make_model": wl_entry.vehicle_make_model if wl_entry else "White SUV",
-            "description": wl_entry.description if wl_entry else "Armed suspect surveillance intercept order"
+            "make_model": wl_entry.vehicle_make_model if wl_entry else "Motor Vehicle",
+            "description": wl_entry.description if wl_entry else f"Active surveillance trace for {clean_target}"
         },
         "chronological_route": checkpoints,
         "corridor_analytics": {
@@ -183,18 +189,22 @@ def get_evidence_dossier(plate_number: str, db: Session = Depends(get_db)) -> Di
 
 @router.post("/simulate-sighting")
 async def simulate_sighting(
-    plate_number: str = "GJ01AB1234",
+    plate_number: Optional[str] = Query(None),
     camera_id: int = None,
     db: Session = Depends(get_db)
 ):
     """
-    Live Hackathon Demo Trigger:
+    Live Evaluation Trigger:
     Simulates a real-time CCTV frame detection for a suspect plate at a Gujarat camera node.
     Fires AI pipeline, extracts color, body type, PTS speed, generates SHA-256, and broadcasts alert.
     """
     import cv2
     import numpy as np
     from app.services.ai_pipeline.pipeline import video_pipeline
+
+    if not plate_number:
+        first_wl = db.query(WatchlistEntry).filter(WatchlistEntry.is_active == True).first()
+        plate_number = first_wl.plate_number if first_wl else f"GJ{random.choice(['01', '05', '27'])}{random.choice(['AB', 'XY', 'EF'])}{random.randint(1000, 9999)}"
 
     # 1. Fetch or create camera
     if camera_id:
@@ -223,10 +233,10 @@ async def simulate_sighting(
     if not wl:
         wl = WatchlistEntry(
             plate_number=clean_target,
-            category="stolen",
-            priority="CRITICAL",
-            vehicle_make_model="White SUV",
-            description="Simulated Target Plate for Live Jury Evaluation",
+            category="surveillance",
+            priority="HIGH",
+            vehicle_make_model="Vehicle Target",
+            description=f"Surveillance Intercept Order for Plate {clean_target}",
             is_active=True
         )
         db.add(wl)
@@ -275,11 +285,11 @@ async def simulate_sighting(
 
 @router.post("/simulate-route")
 async def simulate_route(
-    plate_number: str = "GJ01AB1234",
+    plate_number: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
-    Live Hackathon Demo Trigger:
+    Live Corridor Tracking Simulation:
     Simulates target vehicle driving through 5 major Gujarat CCTV checkpoints:
     Chimanbhai Bridge -> Janpath Hotel -> O.N.G.C. Chandkheda -> Paldi Circle -> S.G. Highway
     Computes exact speeds (km/h), Monotonic PTS timecodes, and SHA-256 evidence hashes.
@@ -290,6 +300,10 @@ async def simulate_route(
     from app.models.detection import DetectionEvent
     from app.models.alert import Alert
 
+    if not plate_number:
+        first_wl = db.query(WatchlistEntry).filter(WatchlistEntry.is_active == True).first()
+        plate_number = first_wl.plate_number if first_wl else f"GJ{random.choice(['01', '05', '27'])}{random.choice(['AB', 'XY', 'EF'])}{random.randint(1000, 9999)}"
+
     clean_target = "".join(c for c in plate_number if c.isalnum()).upper()
 
     # Ensure watchlist entry
@@ -297,10 +311,10 @@ async def simulate_route(
     if not wl:
         wl = WatchlistEntry(
             plate_number=clean_target,
-            category="wanted",
-            priority="CRITICAL",
-            vehicle_make_model="White Fortuner SUV",
-            description="Wanted in Intercity Armed Robbery - Surveillance Tracking",
+            category="surveillance",
+            priority="HIGH",
+            vehicle_make_model="Vehicle Target",
+            description=f"Corridor Surveillance Order for {clean_target}",
             is_active=True
         )
         db.add(wl)
@@ -353,7 +367,7 @@ async def simulate_route(
             plate_number=clean_target,
             confidence=0.965 + (idx * 0.005),
             tracking_id=100 + idx,
-            snapshot_url="/snapshots/snap_GJ01AB1234_1788281568019.jpg",
+            snapshot_url=f"/snapshots/snap_{clean_target}_{int(event_time.timestamp()*1000)}.jpg",
             matched=True,
             watchlist_entry_id=wl.id,
             is_simulated=True,
@@ -432,7 +446,14 @@ def get_traffic_metrics(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
     # If database has few detections, seed an authentic initial stream of traffic camera shoot events
     if total_detections < 8:
-        sample_plates = ["GJ01AB1234", "GJ05CD5678", "GJ27EF9012", "GJ03GH3456", "GJ06JK7890", "GJ01XY4411", "GJ05MN8822", "GJ02PQ6633"]
+        wl_plates = [w.plate_number for w in db.query(WatchlistEntry.plate_number).filter(WatchlistEntry.is_active == True).all()]
+        districts = ['01', '02', '03', '05', '06', '07', '18', '27']
+        series = ['AB', 'CD', 'EF', 'GH', 'JK', 'XY', 'MN', 'PQ']
+        generated = [
+            f"GJ{districts[i % len(districts)]}{series[i % len(series)]}{random.randint(1000, 9999)}"
+            for i in range(8)
+        ]
+        sample_plates = wl_plates[:2] + generated[:8 - len(wl_plates[:2])]
         now = datetime.datetime.now(datetime.timezone.utc)
         for i, plate in enumerate(sample_plates):
             cam = cameras[i % len(cameras)]
@@ -607,7 +628,7 @@ async def trigger_traffic_shoot_frame(
             plate_number=plate,
             confidence=round(random.uniform(0.94, 0.99), 3),
             tracking_id=random.randint(100, 999),
-            snapshot_url="/snapshots/snap_GJ01AB1234_1788281568019.jpg" if is_matched else None,
+            snapshot_url=f"/snapshots/snap_{plate}_{int(now.timestamp()*1000)}.jpg" if is_matched else None,
             matched=is_matched,
             watchlist_entry_id=matched_entry.id if matched_entry else None,
             is_simulated=False,

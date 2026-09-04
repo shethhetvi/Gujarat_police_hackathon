@@ -67,7 +67,7 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* ─── TACTICAL DARK THEME OVERRIDES ─── */
+/* ─── TACTICAL POLICE DARK THEME (COMMAND ROOM DEFAULT) ─── */
 [data-theme="dark"] {
   --primary:          #38BDF8;
   --primary-hover:    #0EA5E9;
@@ -87,31 +87,35 @@
   --warning-border:   rgba(245, 158, 11, 0.3);
 
   --danger:           #EF4444;
-  --danger-light:     rgba(239, 68, 68, 0.15);
-  --danger-border:    rgba(239, 68, 68, 0.35);
+  --danger-light:     rgba(239, 68, 68, 0.18);
+  --danger-border:    rgba(239, 68, 68, 0.45);
 
-  --bg-page:          #090E17;
-  --bg-card:          #0F172A;
-  --bg-subtle:        #141F36;
-  --bg-elevated:      #17223B;
-  --bg-panel:         #0D1527;
-  --bg-input:         #141F36;
+  --accent-blue:      #38BDF8;
+  --accent-gold:      #FBBF24;
 
-  --border:           #1E293B;
-  --border-strong:    #334155;
+  --bg-page:          #080D1A;
+  --bg-page-gradient: radial-gradient(circle at 50% 0%, #0F1D36 0%, #080D1A 70%);
+  --bg-card:          #0D1527;
+  --bg-subtle:        #131E35;
+  --bg-elevated:      #182542;
+  --bg-panel:         #0A1122;
+  --bg-input:         #10192D;
+
+  --border:           #1E2E4A;
+  --border-strong:    #2D436B;
   --border-focus:     #38BDF8;
 
-  --text-heading:     #FFFFFF;
-  --text-main:        #F1F5F9;
-  --text-muted:       #CBD5E1;
-  --text-dim:         #94A3B8;
+  --text-heading:     #F8FAFC;
+  --text-main:        #E2E8F0;
+  --text-muted:       #94A3B8;
+  --text-dim:         #64748B;
   --text-invert:      #0F172A;
 
-  --shadow-sm:        0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-card:      0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
-  --shadow-hover:     0 8px 24px rgba(0, 0, 0, 0.6);
-  --shadow-elevated:  0 12px 28px rgba(0, 0, 0, 0.7);
-  --shadow-modal:     0 25px 60px rgba(0, 0, 0, 0.85);
+  --shadow-sm:        0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --shadow-card:      0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(56, 189, 248, 0.08);
+  --shadow-hover:     0 8px 25px rgba(56, 189, 248, 0.18);
+  --shadow-elevated:  0 14px 32px rgba(0, 0, 0, 0.75);
+  --shadow-modal:     0 25px 60px rgba(0, 0, 0, 0.9);
 }
 
 /* ─── RESET & BASE ─── */

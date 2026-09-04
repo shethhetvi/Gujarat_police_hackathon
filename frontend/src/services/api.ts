@@ -69,14 +69,18 @@ export const getVehicleRoute = async (plateNumber: string): Promise<any> => {
   return res.data;
 };
 
-export const triggerSimulatedSighting = async (plateNumber: string = 'GJ01AB1234', cameraId?: number): Promise<any> => {
-  const url = `/analytics/simulate-sighting?plate_number=${encodeURIComponent(plateNumber)}${cameraId ? `&camera_id=${cameraId}` : ''}`;
+export const triggerSimulatedSighting = async (plateNumber?: string, cameraId?: number): Promise<any> => {
+  const query: string[] = [];
+  if (plateNumber) query.push(`plate_number=${encodeURIComponent(plateNumber)}`);
+  if (cameraId) query.push(`camera_id=${cameraId}`);
+  const url = `/analytics/simulate-sighting${query.length ? `?${query.join('&')}` : ''}`;
   const res = await api.post(url);
   return res.data;
 };
 
-export const triggerSimulatedRoute = async (plateNumber: string = 'GJ01AB1234'): Promise<any> => {
-  const res = await api.post(`/analytics/simulate-route?plate_number=${encodeURIComponent(plateNumber)}`);
+export const triggerSimulatedRoute = async (plateNumber?: string): Promise<any> => {
+  const url = plateNumber ? `/analytics/simulate-route?plate_number=${encodeURIComponent(plateNumber)}` : '/analytics/simulate-route';
+  const res = await api.post(url);
   return res.data;
 };
 

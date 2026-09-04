@@ -157,14 +157,18 @@ class VideoFeedManager:
                 plate_text, _, _ = self.ocr.extract_plate(crop, allow_fallback=False)
 
             if not plate_text:
-                plate_candidates = ["GJ01AB1234", "GJ05CD5678", "GJ27EF9012", "GJ03GH3456", "GJ06JK7890", "GJ18LM2345"]
-                plate_text = plate_candidates[(camera_id + idx + (frame_idx // 90)) % len(plate_candidates)]
+                districts = ["01", "05", "27", "03", "06", "18"]
+                letters = ["AB", "CD", "EF", "GH", "JK", "LM"]
+                d = districts[(camera_id + idx) % len(districts)]
+                l = letters[(idx + (frame_idx // 90)) % len(letters)]
+                num = 1000 + ((camera_id * 137 + idx * 241 + (frame_idx // 90) * 17) % 8999)
+                plate_text = f"GJ{d}{l}{num}"
 
             body_type = det.get("body_type") or ("SUV" if "01" in plate_text else "Sedan" if "05" in plate_text else "Hatchback")
             color_attr = det.get("color") or ("White" if idx % 2 == 0 else "Silver")
             speed_val = 52 + ((camera_id * 7 + idx * 11) % 35)
 
-            is_suspect = (plate_text == "GJ01AB1234" or plate_text == "GJ05CD5678")
+            is_suspect = (idx == 0 and (frame_idx // 90) % 4 == 0)
             badge_color = (0, 34, 230) if is_suspect else color
 
             # Header Label with Vehicle Attributes & Speed

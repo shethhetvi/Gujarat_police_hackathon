@@ -11,11 +11,7 @@ import {
   BarChart3,
   FileText,
   Settings,
-  Shield,
-  UserCheck,
-  HelpCircle,
-  Sun,
-  Moon
+  Shield
 } from 'lucide-react';
 
 export type SidebarTab =
@@ -85,7 +81,7 @@ export default function Sidebar({
       boxShadow: '4px 0 24px rgba(16, 185, 129, 0.08)'
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Brand Logo Header (Solar Sync Style) */}
+        {/* Brand Logo Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0 0.5rem' }}>
           <div style={{
             width: '32px',
@@ -220,7 +216,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* BOTTOM: Light Mode Toggle Switch (Exact Reference Style!) */}
+      {/* BOTTOM: Light Mode Toggle Switch */}
       <div style={{ padding: '0 0.5rem' }}>
         <div
           onClick={onToggleTheme}

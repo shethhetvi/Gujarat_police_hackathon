@@ -85,47 +85,11 @@ const DEFAULT_CAMERAS: Camera[] = [
   { id: 5, name: 'Gandhinagar Sector 9 Circle', vendor: 'Bosch', protocol: 'RTSP', stream_url: 'rtsp://cctv/gn_sec9', location_name: 'Sector 9, Gandhinagar', latitude: 23.2222, longitude: 72.6497, is_active: true },
 ];
 
-const DEFAULT_WATCHLIST: WatchlistEntry[] = [
-  { id: 1, plate_number: 'GJ01AB1234', category: 'stolen', priority: 'CRITICAL', vehicle_make_model: 'White Fortuner', description: 'FIR #4092 Navrangpura PS - Armed Stolen Vehicle', is_active: true },
-  { id: 2, plate_number: 'GJ05CD5678', category: 'wanted', priority: 'HIGH', vehicle_make_model: 'Silver Swift', description: 'FIR #1120 Katargam PS - Wanted in Highway Robbery', is_active: true },
-  { id: 3, plate_number: 'GJ27EF9012', category: 'blacklisted', priority: 'HIGH', vehicle_make_model: 'Black Scorpio', description: 'State CID Intelligence Intercept Order', is_active: true },
-];
+const DEFAULT_WATCHLIST: WatchlistEntry[] = [];
 
-const DEFAULT_ALERTS: Alert[] = [
-  {
-    id: 101,
-    plate_number: 'GJ01AB1234',
-    category: 'stolen',
-    severity: 'CRITICAL',
-    camera_id: 1,
-    camera_name: 'Ahmedabad S.G. Highway Junction',
-    location_name: 'Ahmedabad S.G. Highway',
-    timestamp: '2026-09-03T10:15:00.000Z',
-    snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
-    acknowledged: false
-  },
-  {
-    id: 102,
-    plate_number: 'GJ05CD5678',
-    category: 'wanted',
-    severity: 'HIGH',
-    camera_id: 3,
-    camera_name: 'Surat Dumas Road Junction',
-    location_name: 'Dumas Road, Surat',
-    timestamp: '2026-09-03T10:30:00.000Z',
-    snapshot_url: '/snapshots/snap_GJ01AB1234_1788281568019.jpg',
-    acknowledged: false
-  }
-];
+const DEFAULT_ALERTS: Alert[] = [];
 
-const DEFAULT_DETECTIONS: DetectionEvent[] = [
-  { id: 1, camera_id: 1, plate_number: 'GJ01AB1234', confidence: 0.985, matched: true, timestamp: '2026-09-03T10:15:00.000Z' },
-  { id: 2, camera_id: 1, plate_number: 'GJ01XY4411', confidence: 0.978, matched: false, timestamp: '2026-09-03T10:18:00.000Z' },
-  { id: 3, camera_id: 3, plate_number: 'GJ05CD5678', confidence: 0.991, matched: true, timestamp: '2026-09-03T10:30:00.000Z' },
-  { id: 4, camera_id: 2, plate_number: 'GJ27EF9012', confidence: 0.965, matched: true, timestamp: '2026-09-03T10:45:00.000Z' },
-  { id: 5, camera_id: 4, plate_number: 'GJ06MN8822', confidence: 0.982, matched: false, timestamp: '2026-09-03T11:00:00.000Z' },
-  { id: 6, camera_id: 5, plate_number: 'GJ02PQ6633', confidence: 0.974, matched: false, timestamp: '2026-09-03T11:15:00.000Z' },
-];
+const DEFAULT_DETECTIONS: DetectionEvent[] = [];
 
 interface Toast {
   id: number;
@@ -156,25 +120,14 @@ export default function CommandCenter() {
   const [wsStatus, setWsStatus] = useState<WsStatus>('disconnected');
   const [isRefreshingCams, setIsRefreshingCams] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
-
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 'notif-init-1',
-      title: '🚨 Critical Intercept: GJ01AB1234',
-      message: 'Stolen White Fortuner identified at Ahmedabad S.G. Highway Junction',
-      timestamp: '3m ago',
-      severity: 'CRITICAL',
-      read: false
-    },
-    {
-      id: 'notif-init-2',
-      title: '⚠️ High Alert: GJ05CD5678',
-      message: 'Wanted Suspect vehicle spotted at Surat Dumas Road',
-      timestamp: '7m ago',
-      severity: 'HIGH',
-      read: false
-    }
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [selectedCam, setSelectedCam] = useState<Camera | null>(null);
+  const [selectedPlate, setSelectedPlate] = useState<string>('');
+  const [isWlModalOpen, setIsWlModalOpen] = useState(false);
+  const [isCamModalOpen, setIsCamModalOpen] = useState(false);
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [dispatchAlert, setDispatchAlert] = useState<Alert | null>(null);
+  const [trackPlate, setTrackPlate] = useState('');
 
   // Modals
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -191,12 +144,9 @@ export default function CommandCenter() {
   const [showAddCameraModal, setShowAddCameraModal] = useState(false);
   const [showAddWatchlistModal, setShowAddWatchlistModal] = useState(false);
   const [dispatchingAlert, setDispatchingAlert] = useState<Alert | null>(null);
-  const [dispatchedUnits, setDispatchedUnits] = useState<Record<number, string>>({
-    101: 'PCR Van #14 (Ahmedabad Crime Branch)'
-  });
+  const [dispatchedUnits, setDispatchedUnits] = useState<Record<number, string>>({});
 
   // Filters
-  const [trackPlate, setTrackPlate] = useState('GJ01AB1234');
   const [camStatusFilter, setCamStatusFilter] = useState('ALL');
   const [camVendorFilter, setCamVendorFilter] = useState('ALL');
   const [gridSourceMode, setGridSourceMode] = useState<string>('auto');
@@ -324,21 +274,22 @@ export default function CommandCenter() {
 
   // Handlers
   const handleSimulateAlert = async () => {
+    const target = trackPlate || watchlist[0]?.plate_number || 'GJ01TA8821';
     setIsSimulating(true);
-    addToast({ type: 'info', title: 'Triggering AI ANPR Pipeline…', msg: `Scanning plate ${trackPlate}` });
+    addToast({ type: 'info', title: 'Triggering AI ANPR Pipeline…', msg: `Scanning plate ${target}` });
     try {
-      const res = await triggerSimulatedSighting(trackPlate || 'GJ01AB1234');
+      const res = await triggerSimulatedSighting(target);
       await loadData();
       addToast({
         type: 'success',
         title: 'AI Intercept Broadcasted',
-        msg: `${trackPlate} spotted at ${res?.camera?.name || 'Ahmedabad Node'}`
+        msg: `${target} spotted at ${res?.camera?.name || 'Ahmedabad Node'}`
       });
     } catch {
       // Fallback in case backend is in simulation mode
       const mockAlert: Alert = {
         id: Date.now(),
-        plate_number: trackPlate || 'GJ01AB1234',
+        plate_number: target,
         severity: 'CRITICAL',
         category: 'stolen',
         camera_name: 'Ahmedabad S.G. Highway Junction',
@@ -350,8 +301,8 @@ export default function CommandCenter() {
       setSummary(prev => ({ ...prev, unacknowledged_alerts: prev.unacknowledged_alerts + 1 }));
       addToast({
         type: 'success',
-        title: `AI Intercept Simulated: ${trackPlate}`,
-        msg: 'Target spotted at Ahmedabad S.G. Highway Junction'
+        title: `AI Intercept Simulated: ${target}`,
+        msg: 'Target spotted at active CCTV checkpoint'
       });
     } finally {
       setIsSimulating(false);
@@ -359,14 +310,16 @@ export default function CommandCenter() {
   };
 
   const handleRunLiveTestScenario = async () => {
+    const target = trackPlate || watchlist[0]?.plate_number || alerts[0]?.plate_number || 'GJ01TA8821';
     setIsSimulating(true);
-    setTrackPlate('GJ01AB1234');
+    setTrackPlate(target);
     
     // Step 1: Voice announcement & Alert Siren
     soundEffects.playAlertSiren();
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
-        const msg = new SpeechSynthesisUtterance("Attention Control Room: Critical Hotlist Alert. Stolen vehicle GJ 01 AB 1234 detected at Chimanbhai Bridge Ahmedabad.");
+        const spokenPlate = target.split('').join(' ');
+        const msg = new SpeechSynthesisUtterance(`Attention Control Room: Critical Hotlist Alert. Suspect vehicle ${spokenPlate} detected at active highway corridor.`);
         msg.rate = 1.05;
         msg.pitch = 1.0;
         window.speechSynthesis.speak(msg);
@@ -375,33 +328,33 @@ export default function CommandCenter() {
 
     addToast({
       type: 'warning',
-      title: '🚨 LIVE CHALLENGE STEP 1: ANPR Sighting',
-      msg: 'Target GJ01AB1234 identified at CAM01 (Chimanbhai Bridge). Watchlist match confirmed.'
+      title: '🚨 LIVE SCENARIO STEP 1: ANPR Sighting',
+      msg: `Target ${target} identified at active camera node. Watchlist match confirmed.`
     });
 
     try {
       // Step 2: Trigger backend real-time detection & route plotting
-      await triggerSimulatedSighting('GJ01AB1234');
-      await triggerSimulatedRoute('GJ01AB1234');
+      await triggerSimulatedSighting(target);
+      await triggerSimulatedRoute(target);
       await loadData();
 
       // Step 3: Switch to GIS Map
       setActiveTab('map');
       addToast({
         type: 'info',
-        title: '🗺️ LIVE CHALLENGE STEP 2: Trajectory Plotted',
-        msg: 'Reconstructed 9 highway checkpoints across Gujarat (Ahmedabad → Navsari).'
+        title: '🗺️ LIVE SCENARIO STEP 2: Trajectory Plotted',
+        msg: `Reconstructed highway checkpoints across Gujarat for ${target}.`
       });
 
       // Step 4: Open Section 65B Dossier after 2.2s for jury inspection
       setTimeout(async () => {
         try {
-          const route = await getVehicleRoute('GJ01AB1234');
+          const route = await getVehicleRoute(target);
           setDossierRouteData(route);
-          setDossierPlate('GJ01AB1234');
+          setDossierPlate(target);
           addToast({
             type: 'success',
-            title: '📄 LIVE CHALLENGE STEP 3: Section 65B Dossier Generated',
+            title: '📄 LIVE SCENARIO STEP 3: Section 65B Dossier Generated',
             msg: 'Cryptographic SHA-256 evidence integrity sealed for courtroom admissibility.'
           });
         } catch {}
@@ -411,7 +364,7 @@ export default function CommandCenter() {
       setActiveTab('map');
       addToast({
         type: 'success',
-        title: '🗺️ Trajectory Plotted: GJ01AB1234',
+        title: `🗺️ Trajectory Plotted: ${target}`,
         msg: 'Corridor checkpoints active on GIS Tracking Map.'
       });
     } finally {
@@ -420,23 +373,24 @@ export default function CommandCenter() {
   };
 
   const handleSimulateRoute = async () => {
+    const target = trackPlate || watchlist[0]?.plate_number || 'GJ01TA8821';
     setIsSimulating(true);
-    addToast({ type: 'info', title: 'Plotting Trajectory Route…', msg: 'Reconstructing 5 checkpoints across Gujarat' });
+    addToast({ type: 'info', title: 'Plotting Trajectory Route…', msg: `Reconstructing checkpoints for ${target}` });
     try {
-      await triggerSimulatedRoute(trackPlate || 'GJ01AB1234');
+      await triggerSimulatedRoute(target);
       await loadData();
       setActiveTab('map');
       addToast({
         type: 'success',
-        title: `Trajectory Plotted: ${trackPlate}`,
-        msg: '5 sequential Gujarat highway checkpoints plotted'
+        title: `Trajectory Plotted: ${target}`,
+        msg: 'Sequential Gujarat highway checkpoints plotted'
       });
     } catch {
       setActiveTab('map');
       addToast({
         type: 'success',
-        title: `Trajectory Plotted: ${trackPlate}`,
-        msg: '5 sequential Gujarat highway checkpoints plotted'
+        title: `Trajectory Plotted: ${target}`,
+        msg: 'Sequential Gujarat highway checkpoints plotted'
       });
     } finally {
       setIsSimulating(false);
@@ -562,7 +516,7 @@ export default function CommandCenter() {
       position: 'relative',
       overflowX: 'hidden'
     }}>
-      {/* Ambient Organic Green Glows (Matching Solar Sync Reference Style) */}
+      {/* Ambient Organic Green Glows (Matching Reference Style) */}
       <div style={{
         position: 'fixed',
         top: '-80px',
@@ -1543,16 +1497,67 @@ export default function CommandCenter() {
                   </div>
 
                   <button
-                    onClick={() => handleOpenDossier(trackPlate || 'GJ01AB1234')}
+                    onClick={() => handleOpenDossier(trackPlate || watchlist[0]?.plate_number || alerts[0]?.plate_number || '')}
                     className="gov-btn gov-btn-primary"
                   >
                     <Printer size={14} />
-                    <span>Print Dossier ({trackPlate})</span>
+                    <span>Print Dossier {trackPlate ? `(${trackPlate})` : ''}</span>
                   </button>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '1rem' }}>
+                {watchlist.length === 0 && (
+                  <div className="gov-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', gridColumn: '1 / -1' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      background: 'rgba(59, 130, 246, 0.12)',
+                      border: '1px solid var(--primary-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 1rem',
+                      color: 'var(--primary)'
+                    }}>
+                      <Shield size={24} />
+                    </div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+                      Instant Section 65B Court Evidence Generator
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '540px', margin: '0.4rem auto 1.5rem', lineHeight: 1.5 }}>
+                      Lookup any vehicle registration plate spotted across Gujarat arterial CCTV junctions to generate an official cryptographically sealed SHA-256 evidence certificate under Section 65B(4) Indian Evidence Act / Section 63 BSA 2023.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.65rem', maxWidth: '440px', margin: '0 auto' }}>
+                      <input
+                        type="text"
+                        placeholder="ENTER REGISTRATION (e.g. GJ01TA5521)"
+                        value={trackPlate}
+                        onChange={e => setTrackPlate(e.target.value.toUpperCase())}
+                        style={{
+                          flex: 1,
+                          padding: '0.65rem 1rem',
+                          borderRadius: '8px',
+                          border: '1.5px solid var(--border)',
+                          background: 'var(--bg-input)',
+                          color: 'var(--text-heading)',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          fontSize: '0.85rem'
+                        }}
+                      />
+                      <button
+                        onClick={() => handleOpenDossier(trackPlate || 'GJ01TA5521')}
+                        className="gov-btn gov-btn-primary"
+                        style={{ padding: '0.65rem 1.25rem', whiteSpace: 'nowrap' }}
+                      >
+                        <Printer size={15} />
+                        <span>Generate Dossier</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {watchlist.map(w => (
                   <div key={w.id} className="gov-card" style={{ padding: '1.15rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

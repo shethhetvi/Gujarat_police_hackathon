@@ -163,7 +163,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({ isOpen, onClose,
             <input
               type="text"
               required
-              placeholder="e.g. GJ01AB1234"
+              placeholder="e.g. GJ01AA0001"
               value={plateNumber}
               onChange={e => setPlateNumber(e.target.value.toUpperCase())}
               style={{

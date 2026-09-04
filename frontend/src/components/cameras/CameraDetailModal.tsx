@@ -34,7 +34,7 @@ export default function CameraDetailModal({
 }: CameraDetailModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [testPlate, setTestPlate] = useState('GJ01AB1234');
+  const [testPlate, setTestPlate] = useState('');
   const [viewMode, setViewMode] = useState<'STREAM' | 'SNAPSHOT'>('STREAM');
   const [sourceMode, setSourceMode] = useState<'auto' | 'webcam' | 'rtsp'>('auto');
   const [streamKey, setStreamKey] = useState(Date.now());
@@ -45,7 +45,8 @@ export default function CameraDetailModal({
     setIsAnalyzing(true);
     setAnalysisResult(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/cameras/${camera.id}/analyze?plate_number=${encodeURIComponent(testPlate)}`, {
+      const q = testPlate ? `?plate_number=${encodeURIComponent(testPlate)}` : '';
+      const res = await fetch(`http://localhost:8000/api/v1/cameras/${camera.id}/analyze${q}`, {
         method: 'POST'
       });
       const data = await res.json();
