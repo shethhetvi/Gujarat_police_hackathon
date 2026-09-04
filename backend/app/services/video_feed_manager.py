@@ -9,6 +9,7 @@ import urllib.parse
 
 from app.services.ai_pipeline.detector import VehicleDetector
 from app.services.ai_pipeline.anpr_ocr import ANPROCREngine
+from app.services.ai_pipeline.enhancer import cctv_enhancer
 from app.core.config import settings
 
 logger = logging.getLogger("sentinelgrid.video_feed")

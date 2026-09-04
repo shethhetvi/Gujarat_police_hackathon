@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from typing import List, Dict, Any, Tuple, Optional
 import logging
+from app.services.ai_pipeline.enhancer import cctv_enhancer
 
 logger = logging.getLogger("sentinelgrid.detector")
 
@@ -219,11 +220,13 @@ class VehicleDetector:
 
     def detect_vehicles(self, frame: np.ndarray, fallback_on_empty: bool = False) -> List[Dict[str, Any]]:
         """
-        Detects vehicles in frame with refined color, body type, and high-precision bounding boxes.
+        Detects vehicles in frame with refined color, body type, and high-precision bounding boxes under extreme conditions.
         """
         if self.is_real_model and self.model is not None and frame is not None:
             try:
-                results = self.model(frame, conf=self.conf_threshold, verbose=False)
+                # Extreme condition frame illumination & edge enhancement
+                inference_frame = cctv_enhancer.enhance_frame_for_detection(frame)
+                results = self.model(inference_frame, conf=self.conf_threshold, verbose=False)
                 detections = []
                 h, w = frame.shape[:2]
 

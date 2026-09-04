@@ -481,6 +481,34 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
               <span>Export Dossier</span>
             </button>
           </div>
+
+          {/* Extreme Condition CCTV Processing Engine Tag */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(15, 23, 42, 0.7)',
+            border: '1px solid #1E293B',
+            borderRadius: '6px',
+            padding: '4px 12px',
+            marginTop: '0.65rem',
+            fontSize: '0.70rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>🛡️ EXTREME CCTV OPTICAL ENHANCER ACTIVE:</span>
+              <span style={{ color: '#94A3B8' }}>Dynamic Gamma Boost (Night) · Highlight Suppression (Glare) · Perspective Tilt Deskew · 5-Tier Super-Res CLAHE</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '1px 6px', borderRadius: '3px', background: 'rgba(34,197,94,0.15)', color: '#4ADE80', fontWeight: 700, fontSize: '0.65rem' }}>
+                ✓ HSRP Syntactic Grammar
+              </span>
+              <span style={{ padding: '1px 6px', borderRadius: '3px', background: 'rgba(56,189,248,0.15)', color: '#38BDF8', fontWeight: 700, fontSize: '0.65rem' }}>
+                ✓ GJ-01 to GJ-38 Disambiguation
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Multi-Camera Correlation Results Strip */}
