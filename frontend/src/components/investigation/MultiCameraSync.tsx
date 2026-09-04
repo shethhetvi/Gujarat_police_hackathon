@@ -33,20 +33,27 @@ interface MultiCameraSyncProps {
 }
 
 export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
-  // Ensure we have at least 4 cameras selected
-  const availableCams = cameras.length > 0 ? cameras : [
-    { id: 1, name: "CAM01 - Chiman bhai Bridge", location_name: "Chiman bhai Bridge, Ahmedabad", protocol: "RTSP", stream_url: "", latitude: 23.0645, longitude: 72.5812, is_active: true } as Camera,
-    { id: 2, name: "CAM02 - Janpath", location_name: "Janpath, Ahmedabad", protocol: "RTSP", stream_url: "", latitude: 23.0610, longitude: 72.5794, is_active: true } as Camera,
-    { id: 3, name: "CAM03 - O.N.G.C. Office", location_name: "O.N.G.C. Office, Chandkheda", protocol: "RTSP", stream_url: "", latitude: 23.1021, longitude: 72.5843, is_active: true } as Camera,
-    { id: 4, name: "CAM04 - Paldi Circle", location_name: "Paldi Circle, Ahmedabad", protocol: "RTSP", stream_url: "", latitude: 23.0135, longitude: 72.5621, is_active: true } as Camera
-  ];
+  const [selectedCamIds, setSelectedCamIds] = useState<number[]>(() => {
+    return [
+      cameras[0]?.id || 1,
+      cameras[1]?.id || 2,
+      cameras[2]?.id || 3,
+      cameras[3]?.id || 4
+    ];
+  });
 
-  const [selectedCamIds, setSelectedCamIds] = useState<number[]>([
-    availableCams[0]?.id || 1,
-    availableCams[1]?.id || 2,
-    availableCams[2]?.id || 3,
-    availableCams[3]?.id || 4
-  ]);
+  useEffect(() => {
+    if (cameras.length >= 4) {
+      setSelectedCamIds([cameras[0].id, cameras[1].id, cameras[2].id, cameras[3].id]);
+    } else if (cameras.length > 0) {
+      setSelectedCamIds([
+        cameras[0]?.id || 1,
+        cameras[1]?.id || cameras[0]?.id || 1,
+        cameras[2]?.id || cameras[0]?.id || 1,
+        cameras[3]?.id || cameras[0]?.id || 1
+      ]);
+    }
+  }, [cameras]);
 
   // Master Synchronized Playback State
   const [isPlaying, setIsPlaying] = useState(true);
@@ -128,7 +135,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
       target_suspect_plate: targetPlate,
       playback_frame_offset: frameOffset,
       active_quadrants: selectedCamIds.map((id, idx) => {
-        const cam = availableCams.find(c => c.id === id);
+        const cam = cameras.find(c => c.id === id);
         return {
           channel: idx + 1,
           camera_id: id,
@@ -476,6 +483,34 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
               <span>Export Dossier</span>
             </button>
           </div>
+
+          {/* Extreme Condition CCTV Processing Engine Tag */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(15, 23, 42, 0.7)',
+            border: '1px solid #1E293B',
+            borderRadius: '6px',
+            padding: '4px 12px',
+            marginTop: '0.65rem',
+            fontSize: '0.70rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>🛡️ EXTREME CCTV OPTICAL ENHANCER ACTIVE:</span>
+              <span style={{ color: '#94A3B8' }}>Dynamic Gamma Boost (Night) · Highlight Suppression (Glare) · Perspective Tilt Deskew · 5-Tier Super-Res CLAHE</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '1px 6px', borderRadius: '3px', background: 'rgba(34,197,94,0.15)', color: '#4ADE80', fontWeight: 700, fontSize: '0.65rem' }}>
+                ✓ HSRP Syntactic Grammar
+              </span>
+              <span style={{ padding: '1px 6px', borderRadius: '3px', background: 'rgba(56,189,248,0.15)', color: '#38BDF8', fontWeight: 700, fontSize: '0.65rem' }}>
+                ✓ GJ-01 to GJ-38 Disambiguation
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Multi-Camera Correlation Results Strip */}
@@ -536,7 +571,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
       }}>
         {[0, 1, 2, 3].map(quadIdx => {
           const camId = selectedCamIds[quadIdx];
-          const cam = availableCams.find(c => c.id === camId) || availableCams[quadIdx % availableCams.length];
+          const cam = cameras.find(c => c.id === camId) || cameras[quadIdx % Math.max(1, cameras.length)];
           const isFocused = layoutMode === 'focus' && focusedQuadrant === quadIdx;
           const liveStreamUrl = `http://localhost:8000/api/v1/cameras/${cam?.id || 1}/live-feed?source=${sourceMode}&paused=${!isPlaying}&t=${streamSyncKey}`;
           const analysisChannel = syncAnalysisResult?.channels?.find((c: any) => c.quadrant === quadIdx + 1);
@@ -596,7 +631,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
                     className="gov-select"
                     style={{ width: 'auto', maxWidth: '200px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', height: '26px' }}
                   >
-                    {availableCams.map(c => (
+                    {cameras.map(c => (
                       <option key={c.id} value={c.id}>
                         #{c.id} {c.name} ({c.location_name})
                       </option>

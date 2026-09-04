@@ -31,13 +31,27 @@ export interface CameraCreate {
 export interface WatchlistEntry {
   id: number;
   plate_number: string;
-  category: 'stolen' | 'wanted' | 'missing' | 'blacklisted';
+  category: 'stolen' | 'wanted' | 'missing' | 'blacklisted' | 'traffic_violator' | 'suspicious';
   description?: string;
   vehicle_make_model?: string;
   color?: string;
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   is_active: boolean;
   created_at?: string;
+
+  // Real-time live CCTV sighting telemetry
+  last_seen_camera_id?: number;
+  last_seen_camera_name?: string;
+  last_seen_location?: string;
+  last_seen_time?: string;
+  last_seen_speed_kmh?: number;
+  last_seen_snapshot_url?: string;
+  last_seen_sha256?: string;
+  total_sightings?: number;
+  dispatch_status?: 'PENDING' | 'DISPATCHED' | 'INTERCEPTED';
+  dispatched_unit?: string;
+  latest_alert_id?: number;
+  is_overspeeding?: boolean;
 }
 
 export interface WatchlistCreate {

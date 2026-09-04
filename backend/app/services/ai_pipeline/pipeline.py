@@ -130,9 +130,16 @@ class VideoAnalyticsPipeline:
             vehicle_crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
             plate_crop, plate_roi = self.detector.locate_license_plate_roi(vehicle_crop)
 
-            # 6. Extract Plate with Indian ANPR OCR & Phonetic Rectification
-            target_crop = plate_crop if plate_crop is not None and plate_crop.size > 0 else vehicle_crop
-            plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(target_crop, allow_fallback=fallback_on_empty)
+            # 6. Extract Plate with Indian ANPR OCR & Phonetic Rectification (Two-tier fallback for extreme CCTV)
+            plate_text = None
+            ocr_conf = 0.0
+            is_simulated = False
+            if plate_crop is not None and plate_crop.shape[0] >= 20 and plate_crop.shape[1] >= 50:
+                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(plate_crop, allow_fallback=False)
+            
+            if not plate_text:
+                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(vehicle_crop, allow_fallback=fallback_on_empty)
+
             is_sim_event = obj.get("is_simulated", False) or is_simulated
 
             if plate_text:

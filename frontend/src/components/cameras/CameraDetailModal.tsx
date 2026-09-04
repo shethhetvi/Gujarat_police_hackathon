@@ -323,27 +323,76 @@ export default function CameraDetailModal({
 
             {/* Analysis Result Banner */}
             {analysisResult && (
-              <div style={{
-                padding: '0.75rem',
-                borderRadius: '6px',
-                background: analysisResult.alert?.id ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                border: `1px solid ${analysisResult.alert?.id ? '#EF4444' : '#22C55E'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '0.78rem'
-              }}>
-                <div>
-                  <span style={{ fontWeight: 800, color: analysisResult.alert?.id ? '#F87171' : '#4ADE80' }}>
-                    {analysisResult.alert?.id ? '🚨 WATCHLIST MATCH DETECTED' : '✓ VEHICLE SCREENED (CLEAR)'}
-                  </span>
-                  <div style={{ color: '#E2E8F0', marginTop: '2px', fontFamily: 'monospace' }}>
-                    Plate: <strong>{analysisResult.detection?.plate_number}</strong> · Conf: {(analysisResult.detection?.confidence * 100).toFixed(1)}% · Track ID: #{analysisResult.detection?.track_id}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  background: analysisResult.alert?.id ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  border: `1px solid ${analysisResult.alert?.id ? '#EF4444' : '#22C55E'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.78rem'
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 800, color: analysisResult.alert?.id ? '#F87171' : '#4ADE80' }}>
+                      {analysisResult.alert?.id ? '🚨 WATCHLIST MATCH DETECTED' : '✓ VEHICLE SCREENED (CLEAR)'}
+                    </span>
+                    <div style={{ color: '#E2E8F0', marginTop: '2px', fontFamily: 'monospace' }}>
+                      Plate: <strong>{analysisResult.alert?.plate_number || testPlate}</strong> · Status: {analysisResult.message || 'Analyzed'}
+                    </div>
                   </div>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
+                    Alert ID: #{analysisResult.alert?.id || 'N/A'}
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>
-                  Alert ID: #{analysisResult.alert?.id || 'N/A'}
-                </span>
+
+                {/* Extreme CCTV Enhancement Diagnostics */}
+                {analysisResult.optical_enhancement && (
+                  <div style={{
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    border: '1px solid #334155',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🛡️ EXTREME CCTV OPTICAL ENHANCEMENT ENGINE
+                      </span>
+                      <span style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                        background: analysisResult.optical_enhancement.lighting_condition === 'NORMAL' ? 'rgba(34,197,94,0.2)' : 'rgba(234,179,8,0.25)',
+                        color: analysisResult.optical_enhancement.lighting_condition === 'NORMAL' ? '#4ADE80' : '#FACC15'
+                      }}>
+                        {analysisResult.optical_enhancement.lighting_condition}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: '#1E293B', color: '#94A3B8' }}>
+                        🌙 Gamma: <strong style={{ color: '#E2E8F0' }}>{analysisResult.optical_enhancement.gamma_correction}</strong>
+                      </span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: '#1E293B', color: '#94A3B8' }}>
+                        ☀️ Anti-Glare: <strong style={{ color: '#E2E8F0' }}>{analysisResult.optical_enhancement.anti_glare_filter}</strong>
+                      </span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: '#1E293B', color: '#94A3B8' }}>
+                        📐 Deskew: <strong style={{ color: '#E2E8F0' }}>{analysisResult.optical_enhancement.perspective_deskew}</strong>
+                      </span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: '#1E293B', color: '#94A3B8' }}>
+                        🔍 Super-Res: <strong style={{ color: '#E2E8F0' }}>{analysisResult.optical_enhancement.super_resolution}</strong>
+                      </span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: '#1E293B', color: '#94A3B8' }}>
+                        🇮🇳 RTO Validation: <strong style={{ color: '#4ADE80' }}>{analysisResult.optical_enhancement.rto_phonetic_grammar}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

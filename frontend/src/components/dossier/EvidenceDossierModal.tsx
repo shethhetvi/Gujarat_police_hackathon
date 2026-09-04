@@ -135,7 +135,6 @@ export default function EvidenceDossierModal({
     a.click();
     URL.revokeObjectURL(url);
   };
-
   return (
     <div className="cmd-backdrop" onClick={onClose} style={{ zIndex: 1200 }}>
       <div

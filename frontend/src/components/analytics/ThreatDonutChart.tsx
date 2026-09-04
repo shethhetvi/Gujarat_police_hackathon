@@ -1,19 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAnalyticsSummary } from '../../services/api';
 
-export default function ThreatDonutChart() {
-  const [month, setMonth] = useState('Jan');
+interface ThreatDonutChartProps {
+  totalDetections?: number;
+  alertsCount?: number;
+}
+
+export default function ThreatDonutChart({
+  totalDetections,
+  alertsCount
+}: ThreatDonutChartProps) {
+  const [month, setMonth] = useState('All');
   const [year, setYear] = useState('2026');
+  const [stats, setStats] = useState({
+    total: totalDetections || 0,
+    hits: alertsCount || 0
+  });
 
-  // 70% Cleared (Green #10B981), 30% Watchlist Matches (Blue #3B82F6)
-  const clearedPct = 70;
-  const matchPct = 30;
+  useEffect(() => {
+    if (totalDetections !== undefined && alertsCount !== undefined) {
+      setStats({ total: totalDetections, hits: alertsCount });
+    } else {
+      getAnalyticsSummary()
+        .then(s => {
+          if (s) {
+            setStats({
+              total: s.total_detections || 0,
+              hits: s.unacknowledged_alerts || 0
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [totalDetections, alertsCount]);
 
-  // Circumference for r=54 is 2 * PI * 54 = 339.292
-  const c = 339.292;
-  const clearedOffset = c * (1 - clearedPct / 100);
-  const matchOffset = c * (1 - matchPct / 100);
+  const total = Math.max(1, stats.total);
+  const matchCount = stats.hits;
+  const matchPct = stats.total > 0 ? Math.min(100, Math.max(1, Math.round((matchCount / total) * 100))) : 0;
+  const clearedPct = stats.total > 0 ? 100 - matchPct : 100;
+
+  // Circumference for r=52 is 2 * PI * 52 = 326.726
+  const c = 326.726;
 
   return (
     <div className="card-flash-emerald" style={{
@@ -43,9 +72,8 @@ export default function ThreatDonutChart() {
               background: '#FFFFFF'
             }}
           >
-            <option>Jan</option>
-            <option>Feb</option>
-            <option>Mar</option>
+            <option>All</option>
+            <option>Current</option>
           </select>
           <select
             value={year}
@@ -60,7 +88,6 @@ export default function ThreatDonutChart() {
             }}
           >
             <option>2026</option>
-            <option>2025</option>
           </select>
         </div>
       </div>
@@ -68,19 +95,7 @@ export default function ThreatDonutChart() {
       {/* SVG Donut */}
       <div style={{ position: 'relative', width: '190px', height: '190px', margin: '0.5rem auto' }}>
         <svg viewBox="0 0 140 140" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-          {/* Blue Arc (30% Watchlist Matches) */}
-          <circle
-            cx="70"
-            cy="70"
-            r="52"
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="28"
-            strokeDasharray={c}
-            strokeDashoffset="0"
-          />
-
-          {/* Green Arc (70% Cleared) */}
+          {/* Base / Cleared Arc (Green) */}
           <circle
             cx="70"
             cy="70"
@@ -89,8 +104,22 @@ export default function ThreatDonutChart() {
             stroke="#10B981"
             strokeWidth="28"
             strokeDasharray={c}
-            strokeDashoffset={c * 0.3}
+            strokeDashoffset="0"
           />
+
+          {/* Matches Arc (Blue/Red) */}
+          {matchPct > 0 && (
+            <circle
+              cx="70"
+              cy="70"
+              r="52"
+              fill="none"
+              stroke="#3B82F6"
+              strokeWidth="28"
+              strokeDasharray={c}
+              strokeDashoffset={c * (clearedPct / 100)}
+            />
+          )}
         </svg>
 
         {/* Overlay Labels */}
@@ -103,19 +132,21 @@ export default function ThreatDonutChart() {
           fontWeight: 800,
           fontSize: '0.85rem'
         }}>
-          70%
+          {clearedPct}%
         </div>
-        <div style={{
-          position: 'absolute',
-          bottom: '22%',
-          right: '25%',
-          transform: 'translate(-50%, -50%)',
-          color: '#FFFFFF',
-          fontWeight: 800,
-          fontSize: '0.85rem'
-        }}>
-          30%
-        </div>
+        {matchPct > 0 && (
+          <div style={{
+            position: 'absolute',
+            bottom: '22%',
+            right: '25%',
+            transform: 'translate(-50%, -50%)',
+            color: '#FFFFFF',
+            fontWeight: 800,
+            fontSize: '0.85rem'
+          }}>
+            {matchPct}%
+          </div>
+        )}
       </div>
 
       {/* Legend */}
@@ -130,11 +161,11 @@ export default function ThreatDonutChart() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#10B981' }} />
-          <span>Cleared Traffic</span>
+          <span>Cleared Traffic ({clearedPct}%)</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#3B82F6' }} />
-          <span>Watchlist Hits</span>
+          <span>Watchlist Hits ({matchCount})</span>
         </div>
       </div>
     </div>

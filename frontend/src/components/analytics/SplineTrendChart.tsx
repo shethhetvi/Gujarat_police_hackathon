@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getTrafficMetrics } from '../../services/api';
 
 interface SplineTrendChartProps {
   title: string;
@@ -17,37 +18,50 @@ export default function SplineTrendChart({
 }: SplineTrendChartProps) {
   const [timeRange, setTimeRange] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [windowRange, setWindowRange] = useState('Last 7 Days');
+  const [trendValues, setTrendValues] = useState<number[]>([]);
+
+  useEffect(() => {
+    getTrafficMetrics().then(data => {
+      if (data?.hourly_distribution?.length) {
+        const counts = data.hourly_distribution.slice(0, 7).map((h: any) => h.count);
+        setTrendValues(counts);
+      }
+    }).catch(() => {});
+  }, []);
 
   const strokeColor = colorType === 'blue' ? '#2563EB' : '#EF4444';
   const fillColor = colorType === 'blue' ? 'url(#blueGrad)' : 'url(#redGrad)';
 
-  // 7 data points
-  const points = colorType === 'blue'
-    ? [
-        { day: 'Day 1', x: 20, y: 110 },
-        { day: 'Day 2', x: 70, y: 80 },
-        { day: 'Day 3', x: 120, y: 95 },
-        { day: 'Day 4', x: 170, y: 65 },
-        { day: 'Day 5', x: 220, y: 72 },
-        { day: 'Day 6', x: 270, y: 50 },
-        { day: 'Day 7', x: 320, y: 30 }
-      ]
-    : [
-        { day: 'Day 1', x: 20, y: 115 },
-        { day: 'Day 2', x: 70, y: 95 },
-        { day: 'Day 3', x: 120, y: 105 },
-        { day: 'Day 4', x: 170, y: 68 },
-        { day: 'Day 5', x: 220, y: 100 },
-        { day: 'Day 6', x: 270, y: 80 },
-        { day: 'Day 7', x: 320, y: 115 }
-      ];
+  const rawPoints = trendValues.length >= 4 ? trendValues : (colorType === 'blue' ? [45, 62, 58, 74, 80, 88, 95] : [12, 18, 14, 25, 19, 28, 22]);
+  const minVal = Math.min(...rawPoints, 0);
+  const maxVal = Math.max(...rawPoints, 100);
 
-  // SVG smooth cubic bezier path
-  const pathD = colorType === 'blue'
-    ? 'M 20 110 C 50 100, 50 80, 70 80 C 95 80, 100 95, 120 95 C 150 95, 150 65, 170 65 C 195 65, 200 72, 220 72 C 250 72, 250 50, 270 50 C 295 50, 300 30, 320 30'
-    : 'M 20 115 C 50 110, 50 95, 70 95 C 95 95, 100 105, 120 105 C 145 105, 155 68, 170 68 C 190 68, 205 100, 220 100 C 245 100, 255 80, 270 80 C 295 80, 305 115, 320 115';
+  // Map 7 points across width 20..320 and height 120..30
+  const points = rawPoints.slice(0, 7).map((val, idx) => {
+    const x = 20 + idx * 50;
+    const norm = (val - minVal) / Math.max(1, maxVal - minVal);
+    const y = Math.round(120 - norm * 85);
+    return { day: `T-${7 - idx}`, x, y, val };
+  });
 
-  const areaD = `${pathD} L 320 135 L 20 135 Z`;
+  // Generate smooth SVG path
+  let pathD = '';
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cx1 = p0.x + (p1.x - p0.x) / 2;
+      const cy1 = p0.y;
+      const cx2 = cx1;
+      const cy2 = p1.y;
+      pathD += ` C ${cx1} ${cy1}, ${cx2} ${cy2}, ${p1.x} ${p1.y}`;
+    }
+  }
+
+  const lastX = points.length ? points[points.length - 1].x : 320;
+  const firstX = points.length ? points[0].x : 20;
+  const areaD = pathD ? `${pathD} L ${lastX} 135 L ${firstX} 135 Z` : '';
 
   return (
     <div
@@ -165,16 +179,18 @@ export default function SplineTrendChart({
           )}
 
           {/* Area Fill */}
-          <path d={areaD} fill={fillColor} />
+          {areaD && <path d={areaD} fill={fillColor} />}
 
           {/* Spline Stroke Line */}
-          <path
-            d={pathD}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
+          {pathD && (
+            <path
+              d={pathD}
+              fill="none"
+              stroke={strokeColor}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          )}
 
           {/* Dots on points */}
           {points.map((pt, idx) => (

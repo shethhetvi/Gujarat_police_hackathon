@@ -1,14 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Zap, Shield, Radio } from 'lucide-react';
+import { Zap, Radio } from 'lucide-react';
 
 interface PatrolBatteryWidgetProps {
   onQuickDispatch?: () => void;
+  readinessPct?: number;
+  stateOfHealth?: number;
+  activeUnitsCount?: number;
 }
 
-export default function PatrolBatteryWidget({ onQuickDispatch }: PatrolBatteryWidgetProps) {
-  const batteryPct = 72;
+export default function PatrolBatteryWidget({
+  onQuickDispatch,
+  readinessPct = 85,
+  stateOfHealth = 94,
+  activeUnitsCount = 5
+}: PatrolBatteryWidgetProps) {
+  const batteryPct = Math.min(100, Math.max(0, readinessPct));
 
   return (
     <div className="card-flash-emerald" style={{
@@ -25,10 +33,10 @@ export default function PatrolBatteryWidget({ onQuickDispatch }: PatrolBatteryWi
           Patrol Fleet Readiness
         </div>
         <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
-          State of Health : <span style={{ color: 'var(--text-heading)', fontWeight: 700 }}>90%</span>
+          Units Active : <span style={{ color: 'var(--text-heading)', fontWeight: 700 }}>{activeUnitsCount} Units</span> ({stateOfHealth}% Health)
         </div>
-        <div style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 700, marginTop: '2px' }}>
-          Warning Level : &lt; 30%
+        <div style={{ fontSize: '0.72rem', color: batteryPct < 30 ? '#EF4444' : '#10B981', fontWeight: 700, marginTop: '2px' }}>
+          {batteryPct < 30 ? 'Warning: Low Fleet Availability' : '● Strategic Readiness Active'}
         </div>
       </div>
 
@@ -63,7 +71,9 @@ export default function PatrolBatteryWidget({ onQuickDispatch }: PatrolBatteryWi
           <div style={{
             width: '100%',
             height: `${batteryPct}%`,
-            background: 'linear-gradient(180deg, #34D399 0%, #10B981 100%)',
+            background: batteryPct < 30
+              ? 'linear-gradient(180deg, #F87171 0%, #EF4444 100%)'
+              : 'linear-gradient(180deg, #34D399 0%, #10B981 100%)',
             borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',

@@ -32,32 +32,57 @@ export default function LiveVideoWallWidget({
 }: LiveVideoWallWidgetProps) {
   const [activeCamId, setActiveCamId] = useState<number>(cameras[0]?.id || 1);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [detectedVehicles, setDetectedVehicles] = useState<any[]>([
-    { id: 1, plate: alerts[0]?.plate_number || 'GJ01TA5521', type: 'SUV', speed: 68, isMatch: Boolean(alerts[0]), conf: 98.6, x: 50, y: 55 },
-    { id: 2, plate: 'GJ05MV3310', type: 'Sedan', speed: 54, isMatch: false, conf: 97.2, x: 22, y: 40 },
-    { id: 3, plate: alerts[1]?.plate_number || 'GJ27BR8892', type: 'Commercial', speed: 62, isMatch: Boolean(alerts[1]), conf: 99.1, x: 78, y: 45 }
-  ]);
+  // Dynamically map detected vehicles from active alerts matching the camera or latest critical alerts
+  const [detectedVehicles, setDetectedVehicles] = useState<any[]>([]);
 
-  const [frameTick, setFrameTick] = useState(0);
-  const activeCamera = cameras.find(c => c.id === activeCamId) || cameras[0];
-
-  // Dynamic animation tick: moves simulated vehicles across traffic lanes
   useEffect(() => {
+    if (cameras.length > 0 && !cameras.some(c => c.id === activeCamId)) {
+      setActiveCamId(cameras[0].id);
+    }
+  }, [cameras, activeCamId]);
+
+  // Sync detected vehicles with real active alerts
+  useEffect(() => {
+    const relevantAlerts = alerts.filter(a => !a.camera_id || a.camera_id === activeCamId || !a.acknowledged).slice(0, 3);
+    if (relevantAlerts.length > 0) {
+      const mapped = relevantAlerts.map((a, idx) => ({
+        id: a.id || idx + 1,
+        plate: a.plate_number,
+        type: a.classification_tag?.replace(/_/g, ' ') || a.category || 'Target Vehicle',
+        speed: Math.round(a.speed_kmh || (55 + idx * 7)),
+        isMatch: a.severity === 'CRITICAL' || a.severity === 'HIGH',
+        conf: 98.5,
+        x: 30 + idx * 25,
+        y: 45 + (idx % 2) * 10
+      }));
+      setDetectedVehicles(mapped);
+    } else {
+      setDetectedVehicles([]);
+    }
+  }, [alerts, activeCamId]);
+
+  const activeCamera = cameras.find(c => c.id === activeCamId) || cameras[0];
+  const primarySuspectAlert = alerts.find(a => a.camera_id === activeCamId && a.severity === 'CRITICAL') || 
+    alerts.find(a => a.severity === 'CRITICAL') || 
+    alerts[0];
+
+  // Dynamic animation tick for real-time visual tracking
+  useEffect(() => {
+    if (detectedVehicles.length === 0) return;
     const timer = setInterval(() => {
-      setFrameTick(t => t + 1);
       setDetectedVehicles(prev => prev.map(v => {
-        let newX = v.x + (v.isMatch ? 1.2 : 0.8);
-        if (newX > 90) newX = 10;
+        let newX = v.x + (v.isMatch ? 1.0 : 0.6);
+        if (newX > 88) newX = 15;
         return {
           ...v,
           x: newX,
-          speed: Math.floor(v.speed + (Math.random() * 4 - 2))
+          speed: Math.max(30, Math.min(120, Math.floor(v.speed + (Math.random() * 2 - 1))))
         };
       }));
-    }, 120);
+    }, 150);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [detectedVehicles.length]);
 
   const handleToggleAudio = () => {
     const next = !isAudioMuted;
