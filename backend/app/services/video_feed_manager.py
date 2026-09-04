@@ -132,22 +132,39 @@ class VideoFeedManager:
                 continue
             x1, y1, x2, y2 = bbox
             cls_name = det.get("class_name", "vehicle").upper()
+            body_type = det.get("body_type") or cls_name
+            color_attr = det.get("color") or "DETECTED"
             conf = det.get("confidence", 0.0)
+
+            # Skip low confidence noise
+            if conf < 0.50:
+                continue
+            
+            # Type-specific color coding
+            bt_upper = body_type.upper()
+            if "AUTO-RICKSHAW" in bt_upper:
+                color = (0, 215, 255)       # Amber Gold
+            elif "MOTORCYCLE" in bt_upper or "TWO-WHEELER" in bt_upper:
+                color = (248, 189, 56)      # Sky Blue (BGR: 248, 189, 56)
+            elif "BUS" in bt_upper or "TRUCK" in bt_upper:
+                color = (235, 140, 30)      # Deep Orange
+            else:
+                color = (34, 197, 94)       # Vibrant Emerald Green
             
             # Draw sleek bounding box
-            color = (34, 197, 94)  # Vibrant Green
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             
             # Corner accents
-            c_len = min(16, max(4, (x2 - x1) // 4), max(4, (y2 - y1) // 4))
-            cv2.line(frame, (x1, y1), (x1 + c_len, y1), (56, 189, 248), 3)
-            cv2.line(frame, (x1, y1), (x1, y1 + c_len), (56, 189, 248), 3)
-            cv2.line(frame, (x2, y1), (x2 - c_len, y1), (56, 189, 248), 3)
-            cv2.line(frame, (x2, y1), (x2, y1 + c_len), (56, 189, 248), 3)
-            cv2.line(frame, (x1, y2), (x1 + c_len, y2), (56, 189, 248), 3)
-            cv2.line(frame, (x1, y2), (x1, y2 - c_len), (56, 189, 248), 3)
-            cv2.line(frame, (x2, y2), (x2 - c_len, y2), (56, 189, 248), 3)
-            cv2.line(frame, (x2, y2), (x2 - c_len, y2), (56, 189, 248), 3)
+            c_len = min(16, max(6, (x2 - x1) // 5), max(6, (y2 - y1) // 5))
+            accent_color = (255, 255, 255)
+            cv2.line(frame, (x1, y1), (x1 + c_len, y1), accent_color, 2)
+            cv2.line(frame, (x1, y1), (x1, y1 + c_len), accent_color, 2)
+            cv2.line(frame, (x2, y1), (x2 - c_len, y1), accent_color, 2)
+            cv2.line(frame, (x2, y1), (x2, y1 + c_len), accent_color, 2)
+            cv2.line(frame, (x1, y2), (x1 + c_len, y2), accent_color, 2)
+            cv2.line(frame, (x1, y2), (x1, y2 - c_len), accent_color, 2)
+            cv2.line(frame, (x2, y2), (x2 - c_len, y2), accent_color, 2)
+            cv2.line(frame, (x2, y2), (x2 - c_len, y2), accent_color, 2)
 
             # Crop vehicle ROI and perform real OCR
             h, w = frame.shape[:2]
@@ -156,23 +173,20 @@ class VideoFeedManager:
             if crop is not None and crop.size > 0:
                 plate_text, _, _ = self.ocr.extract_plate(crop, allow_fallback=False)
 
-            body_type = det.get("body_type") or cls_name
-            color_attr = det.get("color") or "DETECTED"
-
             # Header Label with Vehicle Attributes
             if plate_text:
                 label_text = f"{color_attr.upper()} {body_type.upper()} | ANPR: {plate_text}"
             else:
                 label_text = f"{color_attr.upper()} {body_type.upper()} | CONF: {conf:.2f}"
 
-            (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
+            (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.40, 1)
             
             label_y1 = max(34, y1 - th - 8)
             label_y2 = label_y1 + th + 8
-            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), (20, 24, 33), -1)
+            cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), (15, 20, 28), -1)
             cv2.rectangle(frame, (x1, label_y1), (x1 + tw + 12, label_y2), color, 1)
             cv2.putText(frame, label_text, (x1 + 6, label_y2 - 4),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 255, 255), 1, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1, cv2.LINE_AA)
 
     def generate_feed(
         self,

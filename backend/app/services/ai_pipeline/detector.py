@@ -8,14 +8,14 @@ logger = logging.getLogger("sentinelgrid.detector")
 class VehicleDetector:
     """
     Real YOLOv8 Vehicle & Plate Detector (ultralytics) with:
-      - Extended vehicle classes: car, suv, bus, truck, motorcycle, auto-rickshaw.
-      - Vehicle Attribute Extraction: Color recognition & Body type classification.
+      - Refined vehicle classes: SUV, Sedan, Hatchback, Auto-Rickshaw, Motorcycle, Bus, Truck.
+      - Precise color recognition in calibrated HSV space.
+      - IoU-based Non-Maximum Suppression (NMS) to eliminate duplicate/stacked boxes.
       - Dedicated License Plate Region of Interest (ROI) localization.
-      - Seamless fallback for environments without preloaded neural weights.
     """
     VEHICLE_CLASSES = {2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}
 
-    def __init__(self, model_path: str = "yolov8n.pt", conf_threshold: float = 0.45):
+    def __init__(self, model_path: str = "yolov8n.pt", conf_threshold: float = 0.52):
         self.model_path = model_path
         self.conf_threshold = conf_threshold
         self.model = None
@@ -35,7 +35,7 @@ class VehicleDetector:
     def extract_vehicle_color(self, vehicle_crop: np.ndarray) -> str:
         """
         Extracts dominant vehicle body color from central hull in HSV space.
-        Identifies: White, Black, Silver, Red, Blue, Grey, Yellow, Green.
+        Calibrated for Indian traffic: White, Black, Silver, Grey, Yellow, Green, Red, Blue.
         """
         if vehicle_crop is None or vehicle_crop.size == 0:
             return "White"
@@ -51,17 +51,17 @@ class VehicleDetector:
             mean_h, mean_s, mean_v = np.mean(hsv, axis=(0, 1))
 
             # Color heuristic classifier based on HSV distribution
-            if mean_v < 48:
+            if mean_v < 45:
                 return "Black"
-            elif mean_s < 38 and mean_v > 185:
+            elif mean_s < 35 and mean_v > 175:
                 return "White"
-            elif mean_s < 45 and 48 <= mean_v <= 185:
-                return "Silver" if mean_v > 120 else "Grey"
+            elif mean_s < 42 and 45 <= mean_v <= 175:
+                return "Silver" if mean_v > 115 else "Grey"
             else:
                 # Chromatic colors by Hue (0 - 180 in OpenCV)
-                if (0 <= mean_h <= 10) or (165 <= mean_h <= 180):
+                if (0 <= mean_h <= 12) or (165 <= mean_h <= 180):
                     return "Red"
-                elif 18 <= mean_h <= 34:
+                elif 14 <= mean_h <= 34:
                     return "Yellow"
                 elif 35 <= mean_h <= 85:
                     return "Green"
@@ -72,33 +72,54 @@ class VehicleDetector:
         except Exception:
             return "White"
 
-    def classify_body_type(self, base_class: str, bbox: List[int], frame_shape: Tuple[int, int]) -> str:
+    def classify_body_type(self, base_class: str, bbox: List[int], frame_shape: Tuple[int, int], color: str = "") -> str:
         """
-        Refines vehicle class into specialized body types:
-        SUV, Sedan, Hatchback, Truck, Bus, Motorcycle, Auto-Rickshaw.
+        Refines vehicle class into specialized body types with accurate Indian road heuristics:
+        SUV, Sedan, Hatchback, Auto-Rickshaw, Motorcycle, Bus, Truck.
         """
         x1, y1, x2, y2 = bbox
         width = max(1, x2 - x1)
         height = max(1, y2 - y1)
+        frame_h, frame_w = frame_shape
+        frame_area = frame_w * frame_h
+        box_area = width * height
+        area_ratio = box_area / float(max(1, frame_area))
         aspect_ratio = width / float(height)
 
+        # 1. Two-Wheelers: strictly Motorcycle / Scooter (never confuse with 4-wheelers/auto)
         if base_class == "motorcycle":
-            # Auto-rickshaw detection heuristic in Indian traffic (wider aspect ratio, roof canvas)
-            if aspect_ratio > 0.85:
-                return "Auto-Rickshaw"
             return "Motorcycle"
+
+        # 2. Heavy Passenger Vehicles
         elif base_class == "bus":
             return "Bus"
+
+        # 3. Heavy Goods / Commercial Vehicles
         elif base_class == "truck":
+            # If the detected 'truck' box is very small relative to frame, it is usually a pickup/van or small car
+            if area_ratio < 0.04 and aspect_ratio < 1.3:
+                return "Auto-Rickshaw" if color in ["Yellow", "Green", "Black"] else "Hatchback"
+            elif area_ratio < 0.08:
+                return "Pickup / Van"
             return "Truck"
-        else:  # base_class == "car"
-            # Distinguish SUV vs Sedan vs Hatchback by bounding box proportions
-            if aspect_ratio < 1.15:
+
+        # 4. Four-Wheelers & 3-Wheelers (base_class == "car")
+        else:
+            # Auto-Rickshaw detection in Indian traffic:
+            # Characteristics: Compact upright box (aspect ratio 0.8 to 1.15), small-medium area, yellow/green/black hood
+            if (0.75 <= aspect_ratio <= 1.18) and (area_ratio < 0.065) and (color in ["Yellow", "Green", "Black", "Grey"]):
+                return "Auto-Rickshaw"
+
+            # SUV vs Sedan vs Hatchback:
+            # SUV / MPV: Large boxy profile, substantial height and width (e.g. Fortuner, Scorpio, Creta, Brezza)
+            if aspect_ratio <= 1.25 and area_ratio >= 0.04:
                 return "SUV"
-            elif aspect_ratio > 1.45:
-                return "Sedan"
+            elif 1.25 < aspect_ratio <= 1.45:
+                # Hatchback / Compact SUV
+                return "SUV" if area_ratio > 0.07 else "Hatchback"
             else:
-                return "Hatchback"
+                # Elongated profile (> 1.45)
+                return "Sedan"
 
     def locate_license_plate_roi(self, vehicle_crop: np.ndarray) -> Tuple[Optional[np.ndarray], List[int]]:
         """
@@ -111,16 +132,13 @@ class VehicleDetector:
 
         try:
             vh, vw = vehicle_crop.shape[:2]
-            # Search bottom 45% of vehicle where registration plates are bumper-mounted
-            bumper_y1 = int(vh * 0.55)
+            bumper_y1 = int(vh * 0.52)
             bumper_crop = vehicle_crop[bumper_y1:vh, 0:vw]
 
             gray = cv2.cvtColor(bumper_crop, cv2.COLOR_BGR2GRAY)
-            # Morphological blackhat to highlight dark plate text on bright HSRP background
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 5))
             blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
 
-            # Sobel horizontal gradient
             grad_x = cv2.Sobel(blackhat, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
             grad_x = np.absolute(grad_x)
             min_val, max_val = np.min(grad_x), np.max(grad_x)
@@ -128,7 +146,6 @@ class VehicleDetector:
                 grad_x = 255 * ((grad_x - min_val) / (max_val - min_val))
             grad_x = grad_x.astype("uint8")
 
-            # Blur and threshold
             grad_x = cv2.GaussianBlur(grad_x, (5, 5), 0)
             _, thresh = cv2.threshold(grad_x, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
@@ -141,8 +158,7 @@ class VehicleDetector:
                 if ch == 0:
                     continue
                 ar = cw / float(ch)
-                # Standard Indian HSRP aspect ratio is roughly 2.0 to 5.5
-                if 2.0 <= ar <= 5.5 and cw > (vw * 0.15) and ch > 14:
+                if 2.0 <= ar <= 5.5 and cw > (vw * 0.15) and ch > 12:
                     score = cw * ch
                     if score > best_score:
                         best_score = score
@@ -154,10 +170,10 @@ class VehicleDetector:
                 return plate_crop, [rx1, ry1, rx2, ry2]
 
             # Standardized fallback bumper ROI
-            fallback_x1 = int(vw * 0.25)
-            fallback_x2 = int(vw * 0.75)
-            fallback_y1 = int(vh * 0.65)
-            fallback_y2 = int(vh * 0.95)
+            fallback_x1 = int(vw * 0.22)
+            fallback_x2 = int(vw * 0.78)
+            fallback_y1 = int(vh * 0.62)
+            fallback_y2 = int(vh * 0.96)
             plate_crop = vehicle_crop[fallback_y1:fallback_y2, fallback_x1:fallback_x2]
             return plate_crop, [fallback_x1, fallback_y1, fallback_x2, fallback_y2]
 
@@ -165,18 +181,45 @@ class VehicleDetector:
             logger.debug(f"ROI extraction error: {e}")
             return None, [0, 0, 0, 0]
 
+    def _apply_nms(self, detections: List[Dict[str, Any]], iou_threshold: float = 0.45) -> List[Dict[str, Any]]:
+        """Removes overlapping/duplicate vehicle bounding boxes using Non-Maximum Suppression."""
+        if len(detections) <= 1:
+            return detections
+
+        boxes = np.array([d["bbox"] for d in detections], dtype=float)
+        scores = np.array([d["confidence"] for d in detections], dtype=float)
+
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 2]
+        y2 = boxes[:, 3]
+
+        areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+        order = scores.argsort()[::-1]
+
+        keep = []
+        while order.size > 0:
+            i = order[0]
+            keep.append(i)
+
+            xx1 = np.maximum(x1[i], x1[order[1:]])
+            yy1 = np.maximum(y1[i], y1[order[1:]])
+            xx2 = np.minimum(x2[i], x2[order[1:]])
+            yy2 = np.minimum(y2[i], y2[order[1:]])
+
+            w = np.maximum(0.0, xx2 - xx1 + 1)
+            h = np.maximum(0.0, yy2 - yy1 + 1)
+            inter = w * h
+
+            iou = inter / (areas[i] + areas[order[1:]] - inter)
+            inds = np.where(iou <= iou_threshold)[0]
+            order = order[inds + 1]
+
+        return [detections[k] for k in keep]
+
     def detect_vehicles(self, frame: np.ndarray, fallback_on_empty: bool = False) -> List[Dict[str, Any]]:
         """
-        Detects vehicles in frame with color and body type attributes.
-        Returns list of dicts:
-          {
-             bbox: [x1, y1, x2, y2],
-             class_name: str,
-             body_type: str,
-             color: str,
-             confidence: float,
-             is_simulated: bool
-          }
+        Detects vehicles in frame with refined color, body type, and high-precision bounding boxes.
         """
         if self.is_real_model and self.model is not None and frame is not None:
             try:
@@ -191,24 +234,39 @@ class VehicleDetector:
                         if cls_id in self.VEHICLE_CLASSES:
                             xyxy = box.xyxy[0].tolist()
                             conf = float(box.conf[0].item())
-                            bbox = [int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])]
+                            
+                            # Filter out weak detections or noisy edge artifacts
+                            if conf < self.conf_threshold:
+                                continue
+
+                            bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                            bw, bh = bx2 - bx1, by2 - by1
+                            
+                            # Filter out impossibly tiny noise boxes or huge frame-filling boxes
+                            if bw < 28 or bh < 24 or (bw > w * 0.92 and bh > h * 0.92):
+                                continue
+
                             base_class = self.VEHICLE_CLASSES[cls_id]
 
                             # Crop vehicle for attribute analysis
-                            vx1, vy1, vx2, vy2 = max(0, bbox[0]), max(0, bbox[1]), min(w, bbox[2]), min(h, bbox[3])
+                            vx1, vy1, vx2, vy2 = max(0, bx1), max(0, by1), min(w, bx2), min(h, by2)
                             vcrop = frame[vy1:vy2, vx1:vx2]
 
                             color = self.extract_vehicle_color(vcrop)
-                            body_type = self.classify_body_type(base_class, bbox, (h, w))
+                            body_type = self.classify_body_type(base_class, [bx1, by1, bx2, by2], (h, w), color)
 
                             detections.append({
-                                "bbox": bbox,
+                                "bbox": [bx1, by1, bx2, by2],
                                 "class_name": base_class,
                                 "body_type": body_type,
                                 "color": color,
                                 "confidence": round(conf, 3),
                                 "is_simulated": False
                             })
+
+                # Apply NMS to eliminate duplicate overlapping boxes
+                if detections:
+                    detections = self._apply_nms(detections, iou_threshold=0.45)
 
                 if detections or not fallback_on_empty:
                     return detections
@@ -219,7 +277,6 @@ class VehicleDetector:
         if fallback_on_empty and frame is not None:
             h, w = frame.shape[:2]
             bbox = [int(w * 0.22), int(h * 0.38), int(w * 0.65), int(h * 0.84)]
-            
             vcrop = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]] if frame is not None else None
             color = self.extract_vehicle_color(vcrop) if vcrop is not None else "White"
 
