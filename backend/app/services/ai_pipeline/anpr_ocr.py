@@ -82,17 +82,26 @@ class ANPROCREngine:
         self.languages = languages or ['en']
         self.reader = None
         self.is_real_ocr = False
-        self._init_ocr()
+        self._tried_ocr_init = False
 
-    def _init_ocr(self):
+    def get_reader(self):
+        if self._tried_ocr_init:
+            return self.reader
+        self._tried_ocr_init = True
         try:
             import easyocr
-            self.reader = easyocr.Reader(self.languages, gpu=False)
-            self.is_real_ocr = True
-            logger.info("EasyOCR engine initialized successfully.")
+            try:
+                self.reader = easyocr.Reader(self.languages, gpu=False, download_enabled=False)
+                self.is_real_ocr = True
+                logger.info("EasyOCR engine initialized from local cache.")
+            except Exception:
+                self.reader = easyocr.Reader(self.languages, gpu=False)
+                self.is_real_ocr = True
+                logger.info("EasyOCR engine initialized successfully.")
         except Exception as e:
-            logger.warning(f"EasyOCR not loaded ({e}). Algorithmic fuzzy HSRP engine active.")
+            logger.warning(f"EasyOCR deferred load notice: {e}. Algorithmic fuzzy HSRP engine active.")
             self.is_real_ocr = False
+        return self.reader
 
     def correct_phonetic_confusion(self, raw_text: str) -> str:
         """
@@ -188,7 +197,8 @@ class ANPROCREngine:
         - Boosts confidence for validated Gujarat RTO district patterns
         Returns: (plate_text, confidence_score, is_simulated)
         """
-        if self.is_real_ocr and self.reader is not None and vehicle_crop is not None and vehicle_crop.size > 0:
+        reader = self.get_reader()
+        if self.is_real_ocr and reader is not None and vehicle_crop is not None and vehicle_crop.size > 0:
             try:
                 # 1. Localize lower 50% plate zone (or full crop if small)
                 vh, vw = vehicle_crop.shape[:2]
@@ -204,7 +214,7 @@ class ANPROCREngine:
 
                 # 3. Multi-candidate OCR screening with alphanumeric allowlist
                 for cand in candidates:
-                    results = self.reader.readtext(cand, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+                    results = reader.readtext(cand, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
                     if not results:
                         continue
 

@@ -20,7 +20,8 @@ router = APIRouter()
 
 @router.get("/", response_model=List[CameraResponse])
 def get_cameras(db: Session = Depends(get_db)):
-    return db.query(Camera).all()
+    return db.query(Camera).filter(Camera.id <= 33).order_by(Camera.id.asc()).all()
+
 
 @router.post("/", response_model=CameraResponse)
 def create_camera(camera_in: CameraCreate, db: Session = Depends(get_db)):

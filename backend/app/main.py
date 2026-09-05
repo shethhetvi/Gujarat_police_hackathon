@@ -12,31 +12,72 @@ from app.core.database import init_db_tables
 SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
 
+import asyncio
+from app.websocket.connection_manager import set_main_loop
+
 def seed_initial_data():
+    import json
     from app.core.database import SessionLocal
     from app.models.camera import Camera
     from app.models.watchlist import WatchlistEntry
     db = SessionLocal()
     try:
-        if db.query(Camera).count() == 0:
-            default_cams = [
-                Camera(name="Chimanbhai Bridge Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/chimanbhai", location_name="Subhash Bridge - RTO, Ahmedabad", latitude=23.0645, longitude=72.5780, is_active=True),
-                Camera(name="Janpath Hotel Circle", vendor="CP Plus", protocol="RTSP", stream_url="rtsp://cctv/janpath", location_name="Ashram Road Corridor, Ahmedabad", latitude=23.0531, longitude=72.5694, is_active=True),
-                Camera(name="O.N.G.C. Chandkheda Circle", vendor="Dahua", protocol="RTSP", stream_url="rtsp://cctv/ongc", location_name="Gandhinagar-Ahmedabad Highway", latitude=23.1025, longitude=72.5935, is_active=True),
-                Camera(name="Paldi Crossroad Circle", vendor="Honeywell", protocol="RTSP", stream_url="rtsp://cctv/paldi", location_name="Paldi, Central Ahmedabad", latitude=23.0135, longitude=72.5620, is_active=True),
-                Camera(name="Ahmedabad S.G. Highway Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/ahmedabad_sg", location_name="SG Highway, Ahmedabad", latitude=23.0338, longitude=72.5085, is_active=True),
-                Camera(name="Ahmedabad Vastrapur Lake Circle", vendor="CP Plus", protocol="RTSP", stream_url="rtsp://cctv/vastrapur", location_name="Vastrapur, Ahmedabad", latitude=23.0350, longitude=72.5293, is_active=True),
-                Camera(name="Surat Dumas Road Junction", vendor="Dahua", protocol="ONVIF", stream_url="rtsp://cctv/surat_dumas", location_name="Dumas Road, Surat", latitude=21.1702, longitude=72.8311, is_active=True),
-                Camera(name="Vadodara Vadsar Circle", vendor="Honeywell", protocol="RTSP", stream_url="rtsp://cctv/vadsar", location_name="Vadsar, Vadodara", latitude=22.2950, longitude=73.1740, is_active=True),
-                Camera(name="Gandhinagar Sector 9 Circle", vendor="Bosch", protocol="RTSP", stream_url="rtsp://cctv/gn_sec9", location_name="Sector 9, Gandhinagar", latitude=23.2222, longitude=72.6497, is_active=True),
-            ]
-            for c in default_cams:
-                db.add(c)
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        sandbox_path = os.path.join(project_root, "sandbox_cameras.json")
+
+        official_cams = []
+        if os.path.exists(sandbox_path):
+            with open(sandbox_path, "r", encoding="utf-8") as f:
+                raw_cams = json.load(f)
+                # Filter for the 33 official Gujarat Police CCTV cameras
+                for c in raw_cams:
+                    cid = c.get("id")
+                    if isinstance(cid, int) and 1 <= cid <= 33:
+                        official_cams.append(c)
+
+        # Prune any cameras beyond the 33 official cameras
+        db.query(Camera).filter(Camera.id > 33).delete(synchronize_session=False)
+        db.commit()
+
+
+        # Synchronize exactly the 33 cameras
+        if official_cams:
+            for item in official_cams[:33]:
+                cid = item.get("id")
+                name = item.get("name")
+                loc = item.get("location_name") or item.get("name")
+                lat = float(item.get("latitude", 23.0225))
+                lng = float(item.get("longitude", 72.5714))
+                rtsp_url = item.get("stream_url") or f"rtsp://cctv.corp8.cloud:8554/stream/{cid}"
+                vendor = item.get("vendor") or "Gujarat Police CCTV"
+
+                existing = db.query(Camera).filter(Camera.id == cid).first()
+                if existing:
+                    existing.name = name
+                    existing.location_name = loc
+                    existing.latitude = lat
+                    existing.longitude = lng
+                    existing.stream_url = rtsp_url
+                    existing.vendor = vendor
+                    existing.is_active = True
+                else:
+                    new_cam = Camera(
+                        id=cid,
+                        name=name,
+                        location_name=loc,
+                        latitude=lat,
+                        longitude=lng,
+                        stream_url=rtsp_url,
+                        vendor=vendor,
+                        protocol="RTSP",
+                        is_active=True
+                    )
+                    db.add(new_cam)
             db.commit()
 
         if db.query(WatchlistEntry).count() == 0:
             default_wl = [
-                WatchlistEntry(plate_number="GJ01AB1234", category="stolen", priority="CRITICAL", vehicle_make_model="White Fortuner", description="FIR #4092 Navrangpura PS - Armed Stolen Vehicle", is_active=True),
+                WatchlistEntry(plate_number="GJ01TA8821", category="stolen", priority="CRITICAL", vehicle_make_model="White Fortuner", description="FIR #4092 Navrangpura PS - Armed Stolen Vehicle", is_active=True),
                 WatchlistEntry(plate_number="GJ05CD5678", category="wanted", priority="HIGH", vehicle_make_model="Silver Swift", description="FIR #1120 Katargam PS - Wanted in Highway Heist", is_active=True),
                 WatchlistEntry(plate_number="GJ27EF9012", category="blacklisted", priority="HIGH", vehicle_make_model="Black Scorpio", description="State Surveillance Intercept Order", is_active=True),
             ]
@@ -50,6 +91,11 @@ def seed_initial_data():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Register event loop for threadsafe WebSocket broadcasting
+    try:
+        set_main_loop(asyncio.get_running_loop())
+    except Exception:
+        pass
     # Startup: initialize database tables & default seeds
     init_db_tables()
     seed_initial_data()

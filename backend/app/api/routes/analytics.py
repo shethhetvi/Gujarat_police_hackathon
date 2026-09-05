@@ -213,19 +213,10 @@ async def simulate_sighting(
         cam = db.query(Camera).filter(Camera.is_active == True).first()
     
     if not cam:
-        cam = Camera(
-            name="Ahmedabad S.G. Highway Junction",
-            vendor="Hikvision",
-            protocol="RTSP",
-            stream_url="rtsp://demo/ahmedabad_sg.mp4",
-            location_name="Ahmedabad S.G. Highway",
-            latitude=23.0338,
-            longitude=72.5085,
-            is_active=True
-        )
-        db.add(cam)
-        db.commit()
-        db.refresh(cam)
+        cam = db.query(Camera).first()
+    
+    if not cam:
+        raise HTTPException(status_code=400, detail="No camera available. Please initialize system cameras.")
 
     # 2. Ensure plate exists in watchlist
     clean_target = "".join(c for c in plate_number if c.isalnum()).upper()
@@ -321,42 +312,23 @@ async def simulate_route(
         db.commit()
         db.refresh(wl)
 
-    # Ensure authentic Gujarat cameras exist in database
-    target_cams_data = [
-        ("Chimanbhai Bridge Junction", "Subhash Bridge - RTO, Ahmedabad", 23.0645, 72.5780, 58.0),
-        ("Janpath Hotel Circle", "Ashram Road Corridor, Ahmedabad", 23.0531, 72.5694, 62.5),
-        ("O.N.G.C. Chandkheda Circle", "Gandhinagar-Ahmedabad Highway", 23.1025, 72.5935, 76.0),
-        ("Paldi Crossroad Circle", "Paldi, Central Ahmedabad", 23.0135, 72.5620, 54.0),
-        ("Ahmedabad S.G. Highway Junction", "S.G. Highway Express, Ahmedabad", 23.0338, 72.5085, 84.5),
-    ]
-
-    persisted_cams = []
-    for name, loc, lat, lon, _ in target_cams_data:
-        cam = db.query(Camera).filter(Camera.name == name).first()
-        if not cam:
-            cam = Camera(
-                name=name,
-                vendor="Hikvision",
-                protocol="RTSP",
-                stream_url="rtsp://demo/live.mp4",
-                location_name=loc,
-                latitude=lat,
-                longitude=lon,
-                is_active=True
-            )
-            db.add(cam)
-            db.commit()
-            db.refresh(cam)
-        persisted_cams.append(cam)
+    # Select 5 official cameras from the registered 33 camera nodes
+    persisted_cams = db.query(Camera).filter(Camera.is_active == True).order_by(Camera.id.asc()).limit(5).all()
+    if not persisted_cams:
+        persisted_cams = db.query(Camera).order_by(Camera.id.asc()).limit(5).all()
+    
+    if not persisted_cams:
+        raise HTTPException(status_code=400, detail="No active cameras available for route simulation")
 
     now = datetime.datetime.now(datetime.timezone.utc)
     base_pts = time.monotonic()
     created_events = []
 
-    for idx, (name, loc, lat, lon, speed) in enumerate(target_cams_data):
-        cam = persisted_cams[idx]
-        event_time = now - datetime.timedelta(minutes=(len(target_cams_data) - idx) * 12)
-        pts_val = base_pts - ((len(target_cams_data) - idx) * 720.0)
+    speeds = [58.0, 64.5, 78.0, 62.0, 84.5]
+    for idx, cam in enumerate(persisted_cams):
+        speed = speeds[idx % len(speeds)]
+        event_time = now - datetime.timedelta(minutes=(len(persisted_cams) - idx) * 12)
+        pts_val = base_pts - ((len(persisted_cams) - idx) * 720.0)
 
         # Generate cryptographic SHA-256 for Section 65B
         token = f"GUJARAT_POLICE_{clean_target}_{cam.id}_{100+idx}_{speed}_{pts_val}"
@@ -423,19 +395,11 @@ def get_traffic_metrics(db: Session = Depends(get_db)) -> Dict[str, Any]:
     camera junction volume rankings, OCR confidence averages, and watchlist hit rates.
     """
     # 1. Ensure cameras exist
-    cameras = db.query(Camera).all()
+    cameras = db.query(Camera).filter(Camera.id <= 33).all()
     if not cameras:
-        default_cams = [
-            Camera(name="Ahmedabad S.G. Highway Junction", vendor="Hikvision", protocol="RTSP", stream_url="rtsp://cctv/ahmedabad_sg", location_name="SG Highway, Ahmedabad", latitude=23.0338, longitude=72.5850, is_active=True),
-            Camera(name="Ahmedabad Vastrapur Circle", vendor="CP Plus", protocol="RTSP", stream_url="rtsp://cctv/vastrapur", location_name="Vastrapur Lake, Ahmedabad", latitude=23.0350, longitude=72.5293, is_active=True),
-            Camera(name="Surat Dumas Road Junction", vendor="Dahua", protocol="ONVIF", stream_url="rtsp://cctv/surat_dumas", location_name="Dumas Road, Surat", latitude=21.1702, longitude=72.8311, is_active=True),
-            Camera(name="Vadodara Vadsar Circle", vendor="Honeywell", protocol="RTSP", stream_url="rtsp://cctv/vadsar", location_name="Vadsar Circle, Vadodara", latitude=22.2950, longitude=73.1740, is_active=True),
-            Camera(name="Gandhinagar Sector 9 Circle", vendor="Bosch", protocol="RTSP", stream_url="rtsp://cctv/gn_sec9", location_name="Sector 9, Gandhinagar", latitude=23.2222, longitude=72.6497, is_active=True),
-        ]
-        for c in default_cams:
-            db.add(c)
-        db.commit()
-        cameras = db.query(Camera).all()
+        from app.main import seed_initial_data
+        seed_initial_data()
+        cameras = db.query(Camera).filter(Camera.id <= 33).all()
 
     total_cameras = len(cameras)
     active_cameras = len([c for c in cameras if c.is_active])
@@ -591,19 +555,10 @@ async def trigger_traffic_shoot_frame(
         cam = db.query(Camera).filter(Camera.is_active == True).first()
 
     if not cam:
-        cam = Camera(
-            name="Ahmedabad S.G. Highway Junction",
-            vendor="Hikvision",
-            protocol="RTSP",
-            stream_url="rtsp://demo/ahmedabad_sg.mp4",
-            location_name="Ahmedabad S.G. Highway",
-            latitude=23.0338,
-            longitude=72.5085,
-            is_active=True
-        )
-        db.add(cam)
-        db.commit()
-        db.refresh(cam)
+        cam = db.query(Camera).first()
+    
+    if not cam:
+        raise HTTPException(status_code=400, detail="No camera available.")
 
     watchlist_targets = db.query(WatchlistEntry).filter(WatchlistEntry.is_active == True).all()
 

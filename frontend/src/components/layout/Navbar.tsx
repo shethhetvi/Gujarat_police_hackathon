@@ -14,7 +14,8 @@ import {
   Shield,
   Radio,
   User,
-  AlertTriangle
+  AlertTriangle,
+  Bot
 } from 'lucide-react';
 import { OfficerProfile, NotificationItem } from '../../types';
 
@@ -30,6 +31,7 @@ interface NavbarProps {
   onSimulateAlert: () => void;
   onSimulateRoute: () => void;
   onRunLiveTestScenario?: () => void;
+  onOpenAgent?: () => void;
   isSimulating: boolean;
   trackPlate: string;
   onTrackPlateChange: (p: string) => void;
@@ -95,6 +97,7 @@ export default function Navbar({
   onSimulateAlert,
   onSimulateRoute,
   onRunLiveTestScenario,
+  onOpenAgent,
   isSimulating
 }: NavbarProps) {
   const [istTime, setIstTime] = useState('');
@@ -351,6 +354,35 @@ export default function Navbar({
             <Navigation size={12} />
             <span>Sim Route</span>
           </button>
+
+          {/* AI Copilot Agent Button */}
+          {onOpenAgent && (
+            <button
+              onClick={onOpenAgent}
+              style={{
+                height: '38px',
+                padding: '0 0.85rem',
+                borderRadius: '9999px',
+                border: '1.5px solid #10B981',
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                color: '#FFFFFF',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box'
+              }}
+              title="Open Autonomous Surveillance AI Agent"
+            >
+              <Bot size={13} style={{ color: '#A7F3D0' }} />
+              <span>🤖 AI Agent</span>
+            </button>
+          )}
         </div>
 
         {/* Subtle Divider */}

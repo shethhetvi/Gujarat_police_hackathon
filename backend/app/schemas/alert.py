@@ -3,9 +3,9 @@ from typing import Optional
 from datetime import datetime
 
 class AlertBase(BaseModel):
-    detection_event_id: int
-    camera_id: int
-    watchlist_entry_id: int
+    detection_event_id: Optional[int] = None
+    camera_id: Optional[int] = None
+    watchlist_entry_id: Optional[int] = None
     plate_number: str
     severity: Optional[str] = "HIGH"
     location_name: Optional[str] = None

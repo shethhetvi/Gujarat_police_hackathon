@@ -32,6 +32,8 @@ export default function LiveVideoWallWidget({
 }: LiveVideoWallWidgetProps) {
   const [activeCamId, setActiveCamId] = useState<number>(cameras[0]?.id || 1);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [streamError, setStreamError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(Date.now());
   // Dynamically map detected vehicles from active alerts matching the camera or latest critical alerts
   const [detectedVehicles, setDetectedVehicles] = useState<any[]>([]);
 
@@ -186,18 +188,52 @@ export default function LiveVideoWallWidget({
 
             {/* Real Live Video Stream from Backend */}
             <img
-              key={activeCamId}
+              key={`${activeCamId}-${reloadKey}`}
               src={`http://localhost:8000/api/v1/cameras/${activeCamera?.id || 1}/live-feed?source=auto`}
               alt={activeCamera?.name || 'Live CCTV Feed'}
+              onLoad={() => setStreamError(false)}
+              onError={() => {
+                setStreamError(true);
+                setTimeout(() => setReloadKey(Date.now()), 3500);
+              }}
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover'
-              }}
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
+                objectFit: 'cover',
+                display: streamError ? 'none' : 'block'
               }}
             />
+
+            {/* Signal Connecting / Standby Indicator */}
+            {streamError && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(10, 15, 24, 0.95)',
+                color: '#38BDF8',
+                gap: '0.6rem',
+                zIndex: 4
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '3px solid rgba(56, 189, 248, 0.2)',
+                  borderTopColor: '#38BDF8',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>
+                  Connecting to CAM-{String(activeCamera?.id || 1).padStart(2, '0')} HD Stream…
+                </span>
+                <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
+                  Acquiring RTSP/HLS feed from Gujarat Police Sentinel Grid
+                </span>
+              </div>
+            )}
 
             {/* Top HUD Overlay */}
             <div style={{
@@ -227,12 +263,12 @@ export default function LiveVideoWallWidget({
               </span>
 
               <span style={{ background: 'rgba(0,0,0,0.85)', padding: '3px 8px', borderRadius: '4px', fontFamily: 'monospace', color: '#38BDF8', fontWeight: 700 }}>
-                {activeCamera?.protocol || 'RTSP'} · 1080p @ 30fps
+                {activeCamera?.protocol || 'RTSP'} · 720p HD @ 25fps
               </span>
             </div>
 
-            {/* Animated Vehicles with YOLOv8 Bounding Boxes */}
-            {detectedVehicles.map(v => (
+            {/* Show simulated boxes only if stream has error/connecting */}
+            {streamError && detectedVehicles.map(v => (
               <div
                 key={v.id}
                 style={{
