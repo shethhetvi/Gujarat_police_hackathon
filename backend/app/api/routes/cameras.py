@@ -81,7 +81,10 @@ def get_camera_endpoints(camera_id: int, db: Session = Depends(get_db)):
         }
     }
 
+from fastapi.responses import StreamingResponse, Response
+
 @router.get("/{camera_id}/live-feed")
+@router.get("/{camera_id}/stream")
 def get_camera_live_feed(
     camera_id: int,
     source: Optional[str] = "auto",
@@ -108,6 +111,32 @@ def get_camera_live_feed(
             is_paused=bool(paused)
         ),
         media_type="multipart/x-mixed-replace; boundary=frame"
+    )
+
+@router.get("/{camera_id}/snapshot")
+def get_camera_snapshot(
+    camera_id: int,
+    source: Optional[str] = "auto",
+    db: Session = Depends(get_db)
+):
+    """
+    Returns a single high-definition JPEG snapshot frame with AI detections and HUD overlay.
+    Instant, non-blocking HTTP response that prevents browser connection pool exhaustion.
+    """
+    cam = db.query(Camera).filter(Camera.id == camera_id).first()
+    cam_name = cam.name if cam else f"CAM-{camera_id:02d}"
+    loc_name = cam.location_name if cam else "Gujarat Surveillance Grid"
+
+    jpeg_bytes = video_feed_manager.get_camera_snapshot_bytes(
+        camera_id=camera_id,
+        camera_name=cam_name,
+        location_name=loc_name,
+        source_mode=source or "auto"
+    )
+    return Response(
+        content=jpeg_bytes,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
 
 @router.post("/{camera_id}/analyze")
