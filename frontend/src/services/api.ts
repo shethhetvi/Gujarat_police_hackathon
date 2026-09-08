@@ -25,6 +25,12 @@ export const createCamera = async (camera: CameraCreate): Promise<Camera> => {
   return res.data;
 };
 
+export const getCameraTelemetry = async (cameraId: number): Promise<any> => {
+  const res = await api.get(`/cameras/${cameraId}/telemetry`);
+  return res.data;
+};
+
+
 // ─── Watchlist ────────────────────────────────────────────────────────────
 export const getWatchlist = async (): Promise<WatchlistEntry[]> => {
   const res = await api.get('/watchlist/');

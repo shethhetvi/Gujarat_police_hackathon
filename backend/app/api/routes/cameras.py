@@ -139,6 +139,33 @@ def get_camera_snapshot(
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
 
+@router.get("/{camera_id}/telemetry")
+def get_camera_telemetry_data(
+    camera_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns real-time authoritative traffic intelligence & telemetry for this camera node:
+    - Vehicular flow rate (VPM - Vehicles Per Minute)
+    - Congestion Level & Level of Service (LOS-A through LOS-F)
+    - Density percentage and active tracked vehicles
+    - Average corridor speed and 85th percentile speed (km/h)
+    - Stalled vehicle breakdown hazard count
+    - Fleet composition breakdown (% cars, SUVs, 2-wheelers, auto-rickshaws, heavy vehicles)
+    - Optical environmental conditions (Normal, Night, Glare, Fog)
+    """
+    cam = db.query(Camera).filter(Camera.id == camera_id).first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
+    telemetry = video_feed_manager.get_camera_telemetry(camera_id)
+    telemetry["camera_name"] = cam.name
+    telemetry["location_name"] = cam.location_name
+    telemetry["latitude"] = cam.latitude
+    telemetry["longitude"] = cam.longitude
+    return telemetry
+
+
 @router.post("/{camera_id}/analyze")
 async def run_camera_analytics(
     camera_id: int,

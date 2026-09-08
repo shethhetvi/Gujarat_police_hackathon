@@ -26,9 +26,10 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Camera } from '../../types';
-import { runMultiCameraSync } from '../../services/api';
+import { runMultiCameraSync, getCameraTelemetry } from '../../services/api';
 
 interface MultiCameraSyncProps {
+
   cameras: Camera[];
 }
 
@@ -69,6 +70,36 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
   const [targetPlate, setTargetPlate] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [syncAnalysisResult, setSyncAnalysisResult] = useState<any>(null);
+  const [cameraTelemetry, setCameraTelemetry] = useState<Record<number, any>>({});
+
+  // Fetch real-world traffic telemetry for active cameras
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTelemetry = async () => {
+      try {
+        const promises = selectedCamIds.map(id => getCameraTelemetry(id).catch(() => null));
+        const results = await Promise.all(promises);
+        if (!isMounted) return;
+        const telemetryMap: Record<number, any> = {};
+        results.forEach((res, idx) => {
+          if (res) {
+            telemetryMap[selectedCamIds[idx]] = res;
+          }
+        });
+        setCameraTelemetry(telemetryMap);
+      } catch (err) {
+        // silent fail on connection hiccup
+      }
+    };
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 3500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [selectedCamIds]);
+
 
   // Master synchronization tick
   useEffect(() => {
@@ -793,6 +824,59 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
                   </span>
                 </div>
               </div>
+
+              {/* Real-World Traffic Telemetry Strip */}
+              {cam && cameraTelemetry[cam.id] && (
+                <div style={{
+                  padding: '0.45rem 0.85rem',
+                  background: 'rgba(15, 23, 42, 0.95)',
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.70rem',
+                  flexWrap: 'wrap',
+                  gap: '0.4rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      background: cameraTelemetry[cam.id].congestion_level === 'FREE_FLOW' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)',
+                      color: cameraTelemetry[cam.id].congestion_level === 'FREE_FLOW' ? '#4ADE80' : '#FDE047',
+                      border: `1px solid ${cameraTelemetry[cam.id].congestion_level === 'FREE_FLOW' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(234, 179, 8, 0.4)'}`
+                    }}>
+                      {cameraTelemetry[cam.id].level_of_service} · {cameraTelemetry[cam.id].congestion_level}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      Flow: <strong style={{ color: '#E2E8F0' }}>{cameraTelemetry[cam.id].flow_rate_vpm} VPM</strong>
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      Avg: <strong style={{ color: '#60A5FA' }}>{cameraTelemetry[cam.id].avg_corridor_speed_kmh} km/h</strong>
+                    </span>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      85th %ile: <strong style={{ color: '#A78BFA' }}>{cameraTelemetry[cam.id].speed_85th_percentile_kmh} km/h</strong>
+                    </span>
+                    {cameraTelemetry[cam.id].stalled_vehicles_count > 0 && (
+                      <span style={{
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        color: '#F87171',
+                        fontWeight: 800,
+                        fontSize: '0.62rem'
+                      }}>
+                        ⚠️ {cameraTelemetry[cam.id].stalled_vehicles_count} STALLED
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Viewport Meta Strip */}
               <div style={{
