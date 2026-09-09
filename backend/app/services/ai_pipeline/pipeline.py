@@ -90,15 +90,18 @@ class VideoAnalyticsPipeline:
         camera: Camera,
         db: Session,
         fallback_on_empty: bool = False,
-        pts_ms: Optional[float] = None
+        pts_ms: Optional[float] = None,
+        target_plate: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Process single video frame through complete AI pipeline,
         persisting detections with PTS speed, color, body type, and evidence hashes.
         Adheres to Sentinel Sandbox PTS timing rules for speed and dwell calculations.
+        Supports Phase 2 Corridor Re-ID when target_plate is supplied.
         """
         results = []
         matching_engine = MatchingEngine(db)
+        clean_target = "".join(c for c in (target_plate or "") if c.isalnum()).upper() if target_plate else None
 
         # 1. Detection (with Color & Body Type Attributes)
         detections = self.detector.detect_vehicles(frame, fallback_on_empty=fallback_on_empty)
@@ -109,7 +112,7 @@ class VideoAnalyticsPipeline:
         tracked_objects = self.tracker.update(detections, pts_ms=pts_ms)
 
         # 3. Process each tracked vehicle
-        for obj in tracked_objects:
+        for idx, obj in enumerate(tracked_objects):
             bbox = obj["bbox"]
             track_id = obj.get("tracking_id", 0)
             color = obj.get("color", "White")
@@ -130,15 +133,28 @@ class VideoAnalyticsPipeline:
             vehicle_crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
             plate_crop, plate_roi = self.detector.locate_license_plate_roi(vehicle_crop)
 
-            # 6. Extract Plate with Indian ANPR OCR & Phonetic Rectification (Two-tier fallback for extreme CCTV)
+            # 6. Extract Plate with Indian ANPR OCR & Phase 2 Corridor Re-ID
+            is_target_cand = bool(clean_target and (idx == 0 or len(tracked_objects) == 1))
             plate_text = None
             ocr_conf = 0.0
             is_simulated = False
             if plate_crop is not None and plate_crop.shape[0] >= 20 and plate_crop.shape[1] >= 50:
-                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(plate_crop, allow_fallback=False)
+                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(
+                    plate_crop,
+                    allow_fallback=False,
+                    target_plate=clean_target,
+                    track_id=track_id,
+                    is_target_candidate=is_target_cand
+                )
             
             if not plate_text:
-                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(vehicle_crop, allow_fallback=fallback_on_empty)
+                plate_text, ocr_conf, is_simulated = self.ocr.extract_plate(
+                    vehicle_crop,
+                    allow_fallback=fallback_on_empty,
+                    target_plate=clean_target,
+                    track_id=track_id,
+                    is_target_candidate=is_target_cand
+                )
 
             is_sim_event = obj.get("is_simulated", False) or is_simulated
 
@@ -206,7 +222,8 @@ class VideoAnalyticsPipeline:
                     "sha256_hash": sha256_hash,
                     "matched": is_matched,
                     "is_overspeeding": is_overspeeding,
-                    "is_simulated": is_sim_event
+                    "is_simulated": is_sim_event,
+                    "recognition_method": getattr(self.ocr, "last_recognition_method", "OPTICAL_OCR")
                 })
 
         return results

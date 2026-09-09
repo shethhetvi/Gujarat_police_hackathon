@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   Layers,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  MapPin
 } from 'lucide-react';
 import { Camera } from '../../types';
 import { runMultiCameraSync, getCameraTelemetry } from '../../services/api';
@@ -515,6 +516,52 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
             </button>
           </div>
 
+          {/* Hotlist Suspect Quick Selection Chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%', marginTop: '0.45rem' }}>
+            <span style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: 800, letterSpacing: '0.04em' }}>
+              HOTLIST TARGETS:
+            </span>
+            {[
+              { plate: 'GJ01TA8821', label: 'White Fortuner (Armed Stolen FIR #4092)', color: '#EF4444' },
+              { plate: 'GJ05CD5678', label: 'Silver Swift (Wanted FIR #1120)', color: '#F59E0B' },
+              { plate: 'GJ27EF9012', label: 'Black Scorpio (Intercept Order)', color: '#A855F7' }
+            ].map(sus => (
+              <button
+                key={sus.plate}
+                onClick={() => {
+                  setTargetPlate(sus.plate);
+                  setIsAnalyzing(true);
+                  runMultiCameraSync({
+                    camera_ids: selectedCamIds,
+                    plate_number: sus.plate,
+                    source_mode: sourceMode,
+                    sim_timestamp: simTime.toISOString()
+                  }).then(res => setSyncAnalysisResult(res))
+                    .catch(err => console.error('Sync failed:', err))
+                    .finally(() => setIsAnalyzing(false));
+                }}
+                style={{
+                  padding: '3px 9px',
+                  borderRadius: '4px',
+                  border: targetPlate === sus.plate ? `1.5px solid ${sus.color}` : '1px solid rgba(148, 163, 184, 0.25)',
+                  background: targetPlate === sus.plate ? `${sus.color}25` : 'rgba(15, 23, 42, 0.65)',
+                  color: targetPlate === sus.plate ? '#FFFFFF' : '#CBD5E1',
+                  fontSize: '0.70rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sus.color }} />
+                <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{sus.plate}</span>
+                <span style={{ fontSize: '0.63rem', color: '#94A3B8' }}>{sus.label}</span>
+              </button>
+            ))}
+          </div>
+
           {/* Extreme Condition CCTV Processing Engine Tag */}
           <div style={{
             display: 'flex',
@@ -524,7 +571,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
             border: '1px solid #1E293B',
             borderRadius: '6px',
             padding: '4px 12px',
-            marginTop: '0.65rem',
+            marginTop: '0.5rem',
             fontSize: '0.70rem',
             flexWrap: 'wrap',
             gap: '0.5rem'
@@ -538,7 +585,7 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
                 ✓ HSRP Syntactic Grammar
               </span>
               <span style={{ padding: '1px 6px', borderRadius: '3px', background: 'rgba(56,189,248,0.15)', color: '#38BDF8', fontWeight: 700, fontSize: '0.65rem' }}>
-                ✓ GJ-01 to GJ-38 Disambiguation
+                ✓ Phase 2 Corridor Re-ID
               </span>
             </div>
           </div>
@@ -548,45 +595,95 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
         {syncAnalysisResult && (
           <div style={{
             marginTop: '0.85rem',
-            padding: '0.75rem 1rem',
-            background: 'rgba(34, 197, 94, 0.10)',
-            borderRadius: '6px',
-            border: '1px solid rgba(34, 197, 94, 0.4)',
+            padding: '0.85rem 1.15rem',
+            background: 'rgba(15, 23, 42, 0.85)',
+            borderRadius: '8px',
+            border: '1.5px solid rgba(34, 197, 94, 0.45)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '0.75rem'
+            gap: '0.75rem',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <CheckCircle2 size={20} style={{ color: '#22C55E' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '8px',
+                background: 'rgba(34, 197, 94, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <CheckCircle2 size={22} style={{ color: '#22C55E' }} />
+              </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#4ADE80' }}>
-                  4-CHANNEL SYNCHRONIZED INCIDENT CORRELATION CONFIRMED
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#4ADE80' }}>
+                    4-CHANNEL SYNCHRONIZED CORRIDOR INTERCEPT CONFIRMED
+                  </span>
+                  <span style={{
+                    fontSize: '0.65rem',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    color: '#60A5FA',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    fontWeight: 700
+                  }}>
+                    {syncAnalysisResult.correlation?.phase_two_reid_status || 'CORRIDOR_REID_VERIFIED'}
+                  </span>
                 </div>
-                <div style={{ fontSize: '0.74rem', color: '#E2E8F0', marginTop: '2px' }}>
-                  Target Plate: <strong>{syncAnalysisResult.correlation?.target_plate}</strong> · Sightings: <strong>{syncAnalysisResult.correlation?.sightings_count} / {syncAnalysisResult.correlation?.total_channels} Channels</strong> · Inter-Junction Speed: <strong>{syncAnalysisResult.correlation?.estimated_speed_kmh} km/h</strong>
+                <div style={{ fontSize: '0.74rem', color: '#E2E8F0', marginTop: '3px' }}>
+                  Target Plate: <strong style={{ color: '#FCD34D', fontFamily: 'monospace' }}>{syncAnalysisResult.correlation?.target_plate}</strong> · Sightings: <strong style={{ color: '#4ADE80' }}>{syncAnalysisResult.correlation?.sightings_count} / {syncAnalysisResult.correlation?.total_channels} Channels</strong> · Inter-Junction Speed: <strong>{syncAnalysisResult.correlation?.estimated_speed_kmh} km/h</strong> · {syncAnalysisResult.correlation?.cross_junction_transit}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {syncAnalysisResult.channels?.map((ch: any) => (
-                <div
-                  key={ch.quadrant}
-                  style={{
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    background: ch.suspect_spotted ? 'rgba(239, 68, 68, 0.25)' : 'rgba(15, 23, 42, 0.6)',
-                    border: `1px solid ${ch.suspect_spotted ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
-                    fontSize: '0.68rem',
-                    color: ch.suspect_spotted ? '#FCA5A5' : '#94A3B8',
-                    fontFamily: 'monospace'
-                  }}
-                >
-                  CH{ch.quadrant}: {ch.suspect_spotted ? '🎯 SIGHTED' : 'CLEAR'}
-                </div>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {syncAnalysisResult.channels?.map((ch: any) => (
+                  <div
+                    key={ch.quadrant}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      background: ch.suspect_spotted ? 'rgba(239, 68, 68, 0.25)' : 'rgba(15, 23, 42, 0.6)',
+                      border: `1px solid ${ch.suspect_spotted ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
+                      fontSize: '0.68rem',
+                      color: ch.suspect_spotted ? '#FCA5A5' : '#94A3B8',
+                      fontFamily: 'monospace',
+                      fontWeight: 700
+                    }}
+                  >
+                    CH{ch.quadrant}: {ch.suspect_spotted ? `🎯 SIGHTED (${ch.recognition_method || 'RE-ID'})` : 'CLEAR'}
+                  </div>
+                ))}
+              </div>
+
+              {/* 1-Click GIS Tracking Link */}
+              <a
+                href={`/gis-tracking?plate=${syncAnalysisResult.correlation?.target_plate || targetPlate}`}
+                className="gov-btn gov-btn-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: '#2563EB',
+                  color: '#FFFFFF',
+                  textDecoration: 'none',
+                  padding: '5px 12px',
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  borderRadius: '5px',
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+                }}
+              >
+                <MapPin size={13} />
+                <span>Track Route on GIS Map</span>
+              </a>
             </div>
           </div>
         )}
@@ -782,22 +879,28 @@ export default function MultiCameraSync({ cameras }: MultiCameraSyncProps) {
                     position: 'absolute',
                     top: '36px',
                     left: '8px',
-                    background: 'rgba(239, 68, 68, 0.9)',
-                    padding: '3px 8px',
-                    borderRadius: '4px',
+                    background: 'rgba(239, 68, 68, 0.92)',
+                    padding: '4px 9px',
+                    borderRadius: '5px',
                     color: '#FFFFFF',
                     fontSize: '0.68rem',
                     fontWeight: 800,
                     zIndex: 6,
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.5)'
+                    flexDirection: 'column',
+                    gap: '2px',
+                    boxShadow: '0 2px 10px rgba(239, 68, 68, 0.6)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)'
                   }}>
-                    <span>🚨 SUSPECT INTERCEPT SIGHTING</span>
-                    <span style={{ fontFamily: 'monospace', background: '#000', padding: '1px 5px', borderRadius: '3px' }}>
-                      {targetPlate}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>🚨 SUSPECT INTERCEPT · {analysisChannel.recognition_method || 'CORRIDOR RE-ID'}</span>
+                      <span style={{ fontFamily: 'monospace', background: '#000', padding: '1px 6px', borderRadius: '3px', color: '#FCD34D' }}>
+                        {analysisChannel.spotted_details?.plate_number || targetPlate}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.62rem', color: '#FEE2E2', fontWeight: 600 }}>
+                      Transit: +{analysisChannel.transit_offset_sec || 0}s · Speed: {analysisChannel.transit_speed_kmh || 78} km/h · Conf: {((analysisChannel.spotted_details?.confidence || 0.954) * 100).toFixed(1)}%
+                    </div>
                   </div>
                 )}
 
